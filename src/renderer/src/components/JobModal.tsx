@@ -22,6 +22,8 @@ const JobModal: Component<JobModalProps> = (props) => {
     const [showDebug, setShowDebug] = createSignal(false);
     const [copiedCurl, setCopiedCurl] = createSignal(false);
     const [copiedRequest, setCopiedRequest] = createSignal(false);
+    const [copiedUrls, setCopiedUrls] = createSignal<{ [key: string]: boolean }>({});
+
     const getJobId = (name: string): string => {
         const parts = name.split('/');
         return parts[parts.length - 1];
@@ -89,6 +91,65 @@ const JobModal: Component<JobModalProps> = (props) => {
         } catch (err) {
             console.error('Failed to copy:', err);
         }
+    };
+
+    const copyUrlToClipboard = async (url: string, key: string) => {
+        try {
+            await navigator.clipboard.writeText(url);
+            setCopiedUrls({ ...copiedUrls(), [key]: true });
+            setTimeout(() => {
+                const updated = { ...copiedUrls() };
+                delete updated[key];
+                setCopiedUrls(updated);
+            }, 2000);
+        } catch (err) {
+            console.error('Failed to copy:', err);
+        }
+    };
+
+    const extractOutputVideos = (job: TranscoderJob) => {
+        const videos: Array<{ name: string; url: string }> = [];
+
+        if (!job.config) return videos;
+
+        const outputUri = job.config.output?.uri || job.outputUri || '';
+        const muxStreams = job.config.muxStreams || [];
+
+        // Extract output videos from mux streams
+        muxStreams.forEach((mux: any, index: number) => {
+            const container = mux.container || 'mp4';
+            const fileName = mux.fileName || `output_${index}.${container}`;
+
+            // Build full URL
+            let fullUrl = outputUri;
+            if (outputUri && !outputUri.endsWith('/')) {
+                fullUrl += '/';
+            }
+            fullUrl += fileName;
+
+            videos.push({
+                name: fileName,
+                url: fullUrl
+            });
+        });
+
+        // If no mux streams found, check for elementary streams or default output
+        if (videos.length === 0 && outputUri) {
+            videos.push({
+                name: 'output.mp4',
+                url: outputUri.endsWith('/') ? outputUri + 'output.mp4' : outputUri
+            });
+        }
+
+        return videos;
+    };
+
+    const getPublicUrl = (gsUrl: string): string => {
+        // Convert gs:// to https://storage.googleapis.com/
+        if (gsUrl.startsWith('gs://')) {
+            return gsUrl.replace('gs://', 'https://storage.googleapis.com/');
+        }
+        return gsUrl;
     };
 
     // Handle escape key and body scroll
@@ -180,6 +241,112 @@ const JobModal: Component<JobModalProps> = (props) => {
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* Output Videos Table */}
+                                    <Show when={job().state?.toLowerCase() === 'succeeded' && extractOutputVideos(job()).length > 0}>
+                                        <div>
+                                            <h3 class="text-lg font-medium text-gray-900 flex items-center mb-4">
+                                                <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                </svg>
+                                                Processed Videos
+                                            </h3>
+                                            <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                                                <table class="min-w-full divide-y divide-gray-200">
+                                                    <thead class="bg-gray-50">
+                                                        <tr>
+                                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                File Name
+                                                            </th>
+                                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                Storage URL (gs://)
+                                                            </th>
+                                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                Public URL
+                                                            </th>
+                                                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                Actions
+                                                            </th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody class="bg-white divide-y divide-gray-200">
+                                                        <For each={extractOutputVideos(job())}>
+                                                            {(video, index) => (
+                                                                <tr class="hover:bg-gray-50">
+                                                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                                        {video.name}
+                                                                    </td>
+                                                                    <td class="px-4 py-3 text-sm text-gray-600">
+                                                                        <div class="flex items-center space-x-2">
+                                                                            <span class="font-mono text-xs break-all">{video.url}</span>
+                                                                            <button
+                                                                                onClick={() => copyUrlToClipboard(video.url, `gs-${index()}`)}
+                                                                                class="flex-shrink-0 p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                                                                                title="Copy gs:// URL"
+                                                                            >
+                                                                                {copiedUrls()[`gs-${index()}`] ? (
+                                                                                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                                                    </svg>
+                                                                                ) : (
+                                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                                                    </svg>
+                                                                                )}
+                                                                            </button>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td class="px-4 py-3 text-sm text-gray-600">
+                                                                        <div class="flex items-center space-x-2">
+                                                                            <a
+                                                                                href={getPublicUrl(video.url)}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                class="font-mono text-xs text-blue-600 hover:text-blue-800 break-all"
+                                                                            >
+                                                                                {getPublicUrl(video.url)}
+                                                                            </a>
+                                                                            <button
+                                                                                onClick={() => copyUrlToClipboard(getPublicUrl(video.url), `public-${index()}`)}
+                                                                                class="flex-shrink-0 p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                                                                                title="Copy public URL"
+                                                                            >
+                                                                                {copiedUrls()[`public-${index()}`] ? (
+                                                                                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                                                    </svg>
+                                                                                ) : (
+                                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                                                    </svg>
+                                                                                )}
+                                                                            </button>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td class="px-4 py-3 whitespace-nowrap text-right text-sm">
+                                                                        <a
+                                                                            href={getPublicUrl(video.url)}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            class="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                                                                        >
+                                                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                                            </svg>
+                                                                            Open
+                                                                        </a>
+                                                                    </td>
+                                                                </tr>
+                                                            )}
+                                                        </For>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <p class="text-xs text-gray-500 mt-2">
+                                                💡 Tip: Click the copy icons to copy URLs to clipboard, or click "Open" to view the video
+                                            </p>
+                                        </div>
+                                    </Show>
 
                                     {/* Timeline */}
                                     <div>
