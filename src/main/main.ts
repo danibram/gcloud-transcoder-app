@@ -431,8 +431,10 @@ app.on('window-all-closed', () => {
 ipcMain.handle('list-transcoder-jobs', async (event, settings?: GoogleCloudSettings, pageSize?: number, pageNumber?: number): Promise<ApiResponse<PaginatedJobsResponse>> => {
     try {
         const useSettings = settings || currentSettings;
-        const usePageSize = pageSize || 50;
-        const usePageNumber = pageNumber || 1;
+        // Validate and sanitize inputs
+        const usePageSize = (pageSize && !isNaN(pageSize) && pageSize > 0) ? pageSize : 50;
+        const usePageNumber = (pageNumber && !isNaN(pageNumber) && pageNumber > 0) ? pageNumber : 1;
+
         console.log('Listing jobs using gcloud CLI for project:', useSettings.projectId, 'location:', useSettings.location, 'pageSize:', usePageSize, 'page:', usePageNumber);
 
         const result = await listJobsCLI(useSettings, usePageSize, usePageNumber);

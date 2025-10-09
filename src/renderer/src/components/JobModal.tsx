@@ -1,4 +1,5 @@
-import { Component, For, Show, createEffect } from 'solid-js';
+import { Component, createEffect, createSignal, For, Show } from 'solid-js';
+import { settings } from '../stores/settingsStore';
 import { TranscoderJob } from '../types';
 import {
     AlertCircleIcon,
@@ -18,6 +19,9 @@ interface JobModalProps {
 }
 
 const JobModal: Component<JobModalProps> = (props) => {
+    const [showDebug, setShowDebug] = createSignal(false);
+    const [copiedCurl, setCopiedCurl] = createSignal(false);
+    const [copiedRequest, setCopiedRequest] = createSignal(false);
     const getJobId = (name: string): string => {
         const parts = name.split('/');
         return parts[parts.length - 1];
@@ -41,6 +45,50 @@ const JobModal: Component<JobModalProps> = (props) => {
     const formatDate = (dateString: string): string => {
         if (!dateString) return 'N/A';
         return new Date(dateString).toLocaleString();
+    };
+
+    const extractProjectAndLocation = (jobName: string) => {
+        // Format: projects/{project}/locations/{location}/jobs/{job-id}
+        const parts = jobName.split('/');
+        return {
+            project: parts[1] || settings().projectId,
+            location: parts[3] || settings().location
+        };
+    };
+
+    const generateCurlCommand = (job: TranscoderJob) => {
+        const { project, location } = extractProjectAndLocation(job.name);
+        const jobConfig = JSON.stringify(job.config, null, 2);
+
+        return `curl -X POST \\
+  "https://transcoder.googleapis.com/v1/projects/${project}/locations/${location}/jobs" \\
+  -H "Authorization: Bearer $(gcloud auth print-access-token)" \\
+  -H "Content-Type: application/json" \\
+  -d '${jobConfig}'`;
+    };
+
+    const generateRestApiUrl = (job: TranscoderJob) => {
+        const { project, location } = extractProjectAndLocation(job.name);
+        return `https://transcoder.googleapis.com/v1/projects/${project}/locations/${location}/jobs`;
+    };
+
+    const generateRequestBody = (job: TranscoderJob) => {
+        return JSON.stringify(job.config, null, 2);
+    };
+
+    const copyToClipboard = async (text: string, type: 'curl' | 'request') => {
+        try {
+            await navigator.clipboard.writeText(text);
+            if (type === 'curl') {
+                setCopiedCurl(true);
+                setTimeout(() => setCopiedCurl(false), 2000);
+            } else {
+                setCopiedRequest(true);
+                setTimeout(() => setCopiedRequest(false), 2000);
+            }
+        } catch (err) {
+            console.error('Failed to copy:', err);
+        }
     };
 
     // Handle escape key and body scroll
@@ -222,6 +270,120 @@ const JobModal: Component<JobModalProps> = (props) => {
                                             <p class="text-sm font-medium text-gray-700 mb-1">Full Job Name:</p>
                                             <p class="text-sm text-gray-600 break-all">{job().name}</p>
                                         </div>
+                                    </div>
+
+                                    {/* Debug Section for Google Team */}
+                                    <div class="border-t border-gray-200 pt-6">
+                                        <button
+                                            onClick={() => setShowDebug(!showDebug())}
+                                            class="flex items-center justify-between w-full text-left px-4 py-3 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg transition-colors"
+                                        >
+                                            <div class="flex items-center space-x-2">
+                                                <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                                </svg>
+                                                <span class="font-medium text-orange-900">Debug Info (for Google Support)</span>
+                                            </div>
+                                            <svg
+                                                class={`w-5 h-5 text-orange-600 transition-transform ${showDebug() ? 'rotate-180' : ''}`}
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+
+                                        <Show when={showDebug()}>
+                                            <div class="mt-4 space-y-4">
+                                                {/* REST API URL */}
+                                                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                                    <div class="flex items-center justify-between mb-2">
+                                                        <h4 class="text-sm font-semibold text-blue-900">REST API Endpoint</h4>
+                                                    </div>
+                                                    <div class="bg-white p-3 rounded border border-blue-200">
+                                                        <p class="text-sm font-mono text-gray-800 break-all">
+                                                            POST {generateRestApiUrl(job())}
+                                                        </p>
+                                                    </div>
+                                                    <p class="text-xs text-blue-700 mt-2">
+                                                        Use this endpoint to reproduce the job via REST API
+                                                    </p>
+                                                </div>
+
+                                                {/* Request Body */}
+                                                <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                                                    <div class="flex items-center justify-between mb-2">
+                                                        <h4 class="text-sm font-semibold text-purple-900">Request Body (JSON)</h4>
+                                                        <button
+                                                            onClick={() => copyToClipboard(generateRequestBody(job()), 'request')}
+                                                            class="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 transition-colors"
+                                                        >
+                                                            {copiedRequest() ? '✓ Copied!' : 'Copy JSON'}
+                                                        </button>
+                                                    </div>
+                                                    <div class="bg-white p-3 rounded border border-purple-200 max-h-60 overflow-y-auto">
+                                                        <pre class="text-xs font-mono text-gray-800 whitespace-pre-wrap">
+                                                            {generateRequestBody(job())}
+                                                        </pre>
+                                                    </div>
+                                                    <p class="text-xs text-purple-700 mt-2">
+                                                        This is the exact configuration used for this job
+                                                    </p>
+                                                </div>
+
+                                                {/* cURL Command */}
+                                                <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                                                    <div class="flex items-center justify-between mb-2">
+                                                        <h4 class="text-sm font-semibold text-green-900">Complete cURL Command</h4>
+                                                        <button
+                                                            onClick={() => copyToClipboard(generateCurlCommand(job()), 'curl')}
+                                                            class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                                                        >
+                                                            {copiedCurl() ? '✓ Copied!' : 'Copy cURL'}
+                                                        </button>
+                                                    </div>
+                                                    <div class="bg-white p-3 rounded border border-green-200 max-h-60 overflow-y-auto">
+                                                        <pre class="text-xs font-mono text-gray-800 whitespace-pre-wrap">
+                                                            {generateCurlCommand(job())}
+                                                        </pre>
+                                                    </div>
+                                                    <p class="text-xs text-green-700 mt-2">
+                                                        Run this command to reproduce the exact same job (requires gcloud CLI)
+                                                    </p>
+                                                </div>
+
+                                                {/* Additional Debug Info */}
+                                                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                                    <h4 class="text-sm font-semibold text-gray-900 mb-3">Additional Information</h4>
+                                                    <div class="space-y-2 text-sm">
+                                                        <div class="flex justify-between">
+                                                            <span class="text-gray-600">Project ID:</span>
+                                                            <span class="font-mono text-gray-800">{extractProjectAndLocation(job().name).project}</span>
+                                                        </div>
+                                                        <div class="flex justify-between">
+                                                            <span class="text-gray-600">Location:</span>
+                                                            <span class="font-mono text-gray-800">{extractProjectAndLocation(job().name).location}</span>
+                                                        </div>
+                                                        <div class="flex justify-between">
+                                                            <span class="text-gray-600">Job ID:</span>
+                                                            <span class="font-mono text-gray-800">{getJobId(job().name)}</span>
+                                                        </div>
+                                                        <div class="flex justify-between">
+                                                            <span class="text-gray-600">API Version:</span>
+                                                            <span class="font-mono text-gray-800">v1</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                                    <p class="text-xs text-yellow-800">
+                                                        <strong>Note for Google Support:</strong> Use the REST API endpoint and request body above to reproduce this job.
+                                                        The cURL command includes authentication and can be run directly from a terminal with gcloud CLI installed.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </Show>
                                     </div>
                                 </>
                             )}

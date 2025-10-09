@@ -70,7 +70,10 @@ const App: Component = () => {
             <div class="min-h-screen bg-gray-50">
                 <Show when={currentPage() === 'dashboard'}>
                     <Header
-                        onRefresh={fetchJobs}
+                        onRefresh={() => {
+                            setCurrentPageNum(1);
+                            fetchJobs(1, pageSize());
+                        }}
                         onSettings={() => setCurrentPage('settings')}
                         onTemplates={() => setCurrentPage('templates')}
                         onProcess={() => setCurrentPage('process')}
