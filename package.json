@@ -1,0 +1,101 @@
+{
+    "name": "transcoder-api-electron",
+    "version": "1.0.0",
+    "description": "Google Cloud Transcoder API Desktop Application with SolidJS + TypeScript",
+    "main": "dist/main/main.js",
+    "homepage": "https://github.com/yourusername/transcoder-api-ui",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/yourusername/transcoder-api-ui.git"
+    },
+    "bugs": {
+        "url": "https://github.com/yourusername/transcoder-api-ui/issues"
+    },
+    "scripts": {
+        "dev": "node scripts/dev.js",
+        "dev:concurrent": "concurrently --kill-others \"npm run dev:renderer\" \"npm run dev:main\"",
+        "dev:renderer": "vite",
+        "dev:main": "npm run build:main && electron dist/main/main.js --dev",
+        "dev:main:watch": "tsc -p tsconfig.main.json --watch",
+        "build": "npm run build:renderer && npm run build:main",
+        "build:renderer": "vite build",
+        "build:main": "tsc -p tsconfig.main.json",
+        "start": "npm run build && electron dist/main/main.js",
+        "dist": "npm run build && electron-builder",
+        "dist:all": "npm run build && electron-builder --mac --win --linux",
+        "type-check": "tsc --noEmit",
+        "lint": "eslint src --ext .ts,.tsx",
+        "clean": "rm -rf dist"
+    },
+    "keywords": [
+        "electron",
+        "solidjs",
+        "typescript",
+        "transcoder",
+        "google-cloud"
+    ],
+    "author": "Daniel Biedma",
+    "license": "MIT",
+    "dependencies": {
+        "solid-js": "^1.8.19"
+    },
+    "devDependencies": {
+        "@types/electron": "^1.4.38",
+        "@types/node": "^20.8.0",
+        "@typescript-eslint/eslint-plugin": "^6.7.0",
+        "@typescript-eslint/parser": "^6.7.0",
+        "autoprefixer": "^10.4.16",
+        "concurrently": "^8.2.2",
+        "electron": "^27.0.0",
+        "electron-builder": "^24.6.4",
+        "eslint": "^8.50.0",
+        "postcss": "^8.4.31",
+        "solid-js": "^1.8.0",
+        "tailwindcss": "^3.3.3",
+        "typescript": "^5.2.2",
+        "vite": "^4.4.9",
+        "vite-plugin-solid": "^2.7.0"
+    },
+    "build": {
+        "appId": "com.yourcompany.transcoder-api",
+        "productName": "Transcoder API Dashboard",
+        "directories": {
+            "output": "release"
+        },
+        "files": [
+            "dist/**/*",
+            "public/**/*",
+            "node_modules/**/*",
+            "!node_modules/**/test/**/*",
+            "!node_modules/**/.nyc_output/**/*",
+            "!node_modules/**/coverage/**/*",
+            "!node_modules/**/{README.md,readme.md,CHANGELOG.md,changelog.md}"
+        ],
+        "asarUnpack": [
+            "node_modules/@google-cloud/**/*",
+            "node_modules/google-auth-library/**/*",
+            "node_modules/gaxios/**/*",
+            "node_modules/gcp-metadata/**/*",
+            "node_modules/google-p12-pem/**/*"
+        ],
+        "mac": {
+            "category": "public.app-category.developer-tools",
+            "icon": "public/icon-512.png",
+            "hardenedRuntime": false,
+            "gatekeeperAssess": false
+        },
+        "win": {
+            "target": "nsis",
+            "icon": "public/icon-512.png"
+        },
+        "linux": {
+            "target": "AppImage",
+            "icon": "public/icon-512.png"
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true
+        },
+        "publish": null
+    }
+}
