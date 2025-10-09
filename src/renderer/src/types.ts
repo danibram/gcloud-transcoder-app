@@ -138,6 +138,12 @@ export interface ApiResponse<T> {
     error?: string;
 }
 
+export interface PaginatedJobsResponse {
+    jobs: TranscoderJob[];
+    nextPageToken?: string;
+    totalSize?: number;
+}
+
 // FileSelectResponse no longer needed for CLI mode
 
 export type JobState = 'succeeded' | 'failed' | 'running' | 'pending' | 'unknown';
@@ -150,7 +156,7 @@ export interface CreateJobData {
 }
 
 export interface ElectronAPI {
-    listTranscoderJobs: (settings?: GoogleCloudSettings) => Promise<ApiResponse<TranscoderJob[]>>;
+    listTranscoderJobs: (settings?: GoogleCloudSettings, pageSize?: number, pageNumber?: number) => Promise<ApiResponse<PaginatedJobsResponse>>;
     getTranscoderJob: (jobId: string, settings?: GoogleCloudSettings) => Promise<ApiResponse<TranscoderJob>>;
     testGoogleCloudConnection: (settings: GoogleCloudSettings) => Promise<ApiResponse<boolean>>;
     updateSettings: (settings: GoogleCloudSettings) => void;

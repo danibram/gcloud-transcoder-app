@@ -6,7 +6,7 @@ import { promisify } from 'util';
 // Keep a global reference of the window object
 let mainWindow: BrowserWindow | null = null;
 
-// Promisify exec for async/await usage
+// Promisify exec for async/await usage with larger buffer
 const execAsync = promisify(exec);
 
 // Current settings
@@ -50,22 +50,38 @@ interface ApiResponse<T> {
     error?: string;
 }
 
+interface PaginatedJobsResponse {
+    jobs: TranscoderJob[];
+    nextPageToken?: string;
+    totalSize?: number;
+}
+
 // CLI wrapper functions for gcloud transcoder commands
-async function listJobsCLI(settings: GoogleCloudSettings): Promise<TranscoderJob[]> {
+async function listJobsCLI(settings: GoogleCloudSettings, pageSize: number = 50, pageNumber: number = 1): Promise<PaginatedJobsResponse> {
     try {
-        const command = `gcloud transcoder jobs list --location=${settings.location} --project=${settings.projectId} --format=json --limit=100`;
+        // Limit total jobs fetched to prevent buffer overflow (max 200 jobs = 4 pages of 50)
+        const maxJobsToFetch = 200;
+        const limit = Math.min(pageNumber * pageSize, maxJobsToFetch);
+
+        console.log(`Pagination: page=${pageNumber}, pageSize=${pageSize}, calculatedLimit=${limit}, max=${maxJobsToFetch}`);
+
+        const command = `gcloud transcoder jobs list --location=${settings.location} --project=${settings.projectId} --format=json --sort-by=~createTime --limit=${limit}`;
 
         console.log('Executing CLI command:', command);
-        const { stdout } = await execAsync(command);
+        const { stdout, stderr } = await execAsync(command, { maxBuffer: 50 * 1024 * 1024 }); // 50MB buffer
 
-        if (!stdout.trim()) {
-            return [];
+        if (stderr && stderr.includes('Listed 0 items')) {
+            return { jobs: [], totalSize: 0 };
         }
 
-        const jobs = JSON.parse(stdout);
+        if (!stdout.trim()) {
+            return { jobs: [], totalSize: 0 };
+        }
+
+        const allJobs = JSON.parse(stdout);
 
         // Transform gcloud CLI output to our format
-        return jobs.map((job: any) => ({
+        const transformedJobs = allJobs.map((job: any) => ({
             name: job.name || '',
             inputUri: job.config?.inputs?.[0]?.uri || '',
             outputUri: job.config?.output?.uri || '',
@@ -78,6 +94,20 @@ async function listJobsCLI(settings: GoogleCloudSettings): Promise<TranscoderJob
             error: job.error,
             config: job.config,
         }));
+
+        // Get only the current page
+        const startIndex = (pageNumber - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const pageJobs = transformedJobs.slice(startIndex, endIndex);
+
+        // Determine if there are more pages
+        const hasMore = transformedJobs.length >= limit && limit < maxJobsToFetch;
+
+        return {
+            jobs: pageJobs,
+            totalSize: hasMore ? undefined : transformedJobs.length, // Only show total if we fetched all
+            nextPageToken: endIndex < transformedJobs.length ? 'has-more' : undefined,
+        };
     } catch (error) {
         console.error('CLI Error:', error);
         throw error;
@@ -398,13 +428,15 @@ app.on('window-all-closed', () => {
 });
 
 // IPC handlers for Google Cloud Transcoder CLI
-ipcMain.handle('list-transcoder-jobs', async (event, settings?: GoogleCloudSettings): Promise<ApiResponse<TranscoderJob[]>> => {
+ipcMain.handle('list-transcoder-jobs', async (event, settings?: GoogleCloudSettings, pageSize?: number, pageNumber?: number): Promise<ApiResponse<PaginatedJobsResponse>> => {
     try {
         const useSettings = settings || currentSettings;
-        console.log('Listing jobs using gcloud CLI for project:', useSettings.projectId, 'location:', useSettings.location);
+        const usePageSize = pageSize || 50;
+        const usePageNumber = pageNumber || 1;
+        console.log('Listing jobs using gcloud CLI for project:', useSettings.projectId, 'location:', useSettings.location, 'pageSize:', usePageSize, 'page:', usePageNumber);
 
-        const jobs = await listJobsCLI(useSettings);
-        return { success: true, data: jobs };
+        const result = await listJobsCLI(useSettings, usePageSize, usePageNumber);
+        return { success: true, data: result };
     } catch (error) {
         console.error('Error listing transcoder jobs via CLI:', error);
 

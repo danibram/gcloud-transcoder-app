@@ -17,27 +17,27 @@ const App: Component = () => {
     const [selectedJob, setSelectedJob] = createSignal<TranscoderJob | null>(null);
     const [isModalOpen, setIsModalOpen] = createSignal(false);
     const [currentPage, setCurrentPage] = createSignal<'dashboard' | 'settings' | 'templates' | 'process'>('dashboard');
+    const [pageSize, setPageSize] = createSignal(50);
+    const [currentPageNum, setCurrentPageNum] = createSignal(1);
+    const [totalJobs, setTotalJobs] = createSignal<number | undefined>(undefined);
+    const [hasNextPage, setHasNextPage] = createSignal(false);
 
-    const fetchJobs = async () => {
+    const fetchJobs = async (page: number = 1, size: number = pageSize()) => {
         try {
             setIsLoading(true);
             setError(null);
 
             // Use settings from store
             const currentSettings = settings();
-            const result = await window.electronAPI.listTranscoderJobs(currentSettings);
+
+            const result = await window.electronAPI.listTranscoderJobs(currentSettings, size, page);
 
             if (result.success && result.data) {
-                const sortedJobs = [...result.data].sort((a, b) => {
-                    const aTime = a.createTime
-                        ? new Date(a.createTime).getTime()
-                        : (a.startTime ? new Date(a.startTime).getTime() : 0);
-                    const bTime = b.createTime
-                        ? new Date(b.createTime).getTime()
-                        : (b.startTime ? new Date(b.startTime).getTime() : 0);
-                    return bTime - aTime; // newest first
-                });
-                setJobs(sortedJobs);
+                setJobs(result.data.jobs);
+                setTotalJobs(result.data.totalSize);
+                setHasNextPage(!!result.data.nextPageToken);
+                setCurrentPageNum(page);
+                setPageSize(size);
             } else {
                 setError(result.error || 'Failed to fetch transcoder jobs');
             }
@@ -85,7 +85,19 @@ const App: Component = () => {
                             isLoading={isLoading()}
                             error={error()}
                             onJobClick={handleJobClick}
-                            onRefresh={fetchJobs}
+                            onRefresh={() => {
+                                setCurrentPageNum(1);
+                                fetchJobs(1, pageSize());
+                            }}
+                            currentPage={currentPageNum()}
+                            pageSize={pageSize()}
+                            totalJobs={totalJobs()}
+                            hasNextPage={hasNextPage()}
+                            onPageChange={(page) => fetchJobs(page, pageSize())}
+                            onPageSizeChange={(size) => {
+                                setCurrentPageNum(1);
+                                fetchJobs(1, size);
+                            }}
                         />
                     </main>
 

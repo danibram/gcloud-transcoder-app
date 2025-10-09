@@ -8,9 +8,16 @@ interface JobsTableProps {
     error: string | null;
     onJobClick: (job: TranscoderJob) => void;
     onRefresh: () => void;
+    currentPage: number;
+    pageSize: number;
+    totalJobs?: number;
+    hasNextPage: boolean;
+    onPageChange: (page: number) => void;
+    onPageSizeChange: (size: number) => void;
 }
 
 const JobsTable: Component<JobsTableProps> = (props) => {
+
     const getJobId = (name: string): string => {
         const parts = name.split('/');
         return parts[parts.length - 1];
@@ -43,6 +50,9 @@ const JobsTable: Component<JobsTableProps> = (props) => {
         if (uri.length <= maxLength) return uri;
         return `${uri.substring(0, maxLength)}...`;
     };
+
+    const startIndex = () => (props.currentPage - 1) * props.pageSize + 1;
+    const endIndex = () => startIndex() + props.jobs.length - 1;
 
     return (
         <Show
@@ -106,9 +116,26 @@ const JobsTable: Component<JobsTableProps> = (props) => {
                         <div class="flex items-center space-x-3">
                             <MonitorIcon class="w-5 h-5 text-blue-600" />
                             <h3 class="text-lg font-medium text-gray-900">Transcoder Jobs</h3>
-                            <span class="text-sm text-gray-500">
-                                ({props.jobs.length} job{props.jobs.length !== 1 ? 's' : ''})
-                            </span>
+                            <Show when={props.totalJobs !== undefined}>
+                                <span class="text-sm text-gray-500">
+                                    ({props.totalJobs} total)
+                                </span>
+                            </Show>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <label class="text-sm text-gray-600">
+                                Show:
+                                <select
+                                    value={props.pageSize}
+                                    onChange={(e) => props.onPageSizeChange(Number(e.currentTarget.value))}
+                                    class="ml-2 px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value={10}>10</option>
+                                    <option value={25}>25</option>
+                                    <option value={50}>50</option>
+                                    <option value={100}>100</option>
+                                </select>
+                            </label>
                         </div>
                     </div>
 
@@ -193,6 +220,49 @@ const JobsTable: Component<JobsTableProps> = (props) => {
                             <div class="inline-flex items-center text-sm text-gray-500">
                                 <RefreshIcon class="animate-spin w-4 h-4 mr-2" />
                                 Loading jobs...
+                            </div>
+                        </div>
+                    </Show>
+
+                    {/* Pagination Controls */}
+                    <Show when={props.jobs.length > 0}>
+                        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                            <div class="text-sm text-gray-700">
+                                Showing <span class="font-medium">{startIndex()}</span> to{' '}
+                                <span class="font-medium">{endIndex()}</span>
+                                <Show when={props.totalJobs !== undefined}>
+                                    {' '}of <span class="font-medium">{props.totalJobs}</span>
+                                </Show>
+                                {' '}jobs
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button
+                                    onClick={() => props.onPageChange(1)}
+                                    disabled={props.currentPage === 1}
+                                    class="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    title="First page"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                                    </svg>
+                                </button>
+                                <button
+                                    onClick={() => props.onPageChange(props.currentPage - 1)}
+                                    disabled={props.currentPage === 1}
+                                    class="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Previous
+                                </button>
+                                <span class="text-sm text-gray-700">
+                                    Page <span class="font-medium">{props.currentPage}</span>
+                                </span>
+                                <button
+                                    onClick={() => props.onPageChange(props.currentPage + 1)}
+                                    disabled={!props.hasNextPage}
+                                    class="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Next
+                                </button>
                             </div>
                         </div>
                     </Show>
