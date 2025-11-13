@@ -1,6 +1,6 @@
 import { Component, For, Show } from 'solid-js';
 import { JobState, TranscoderJob } from '../types';
-import { AlertCircleIcon, CalendarIcon, ExternalLinkIcon, MonitorIcon, RefreshIcon } from './Icons';
+import { AlertCircleIcon, CalendarIcon, ExternalLinkIcon, MonitorIcon, RefreshIcon, SearchIcon, XIcon } from './Icons';
 
 interface JobsTableProps {
     jobs: TranscoderJob[];
@@ -14,10 +14,11 @@ interface JobsTableProps {
     hasNextPage: boolean;
     onPageChange: (page: number) => void;
     onPageSizeChange: (size: number) => void;
+    onSearchChange: (searchTerm: string) => void;
+    searchTerm: string;
 }
 
 const JobsTable: Component<JobsTableProps> = (props) => {
-
     const getJobId = (name: string): string => {
         const parts = name.split('/');
         return parts[parts.length - 1];
@@ -91,7 +92,7 @@ const JobsTable: Component<JobsTableProps> = (props) => {
             }
         >
             <Show
-                when={props.jobs.length > 0 || props.isLoading}
+                when={props.jobs.length > 0 || props.isLoading || props.searchTerm.length > 0}
                 fallback={
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
                         <div class="text-center">
@@ -112,31 +113,63 @@ const JobsTable: Component<JobsTableProps> = (props) => {
                 }
             >
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <MonitorIcon class="w-5 h-5 text-blue-600" />
-                            <h3 class="text-lg font-medium text-gray-900">Transcoder Jobs</h3>
-                            <Show when={props.totalJobs !== undefined}>
-                                <span class="text-sm text-gray-500">
-                                    ({props.totalJobs} total)
-                                </span>
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <MonitorIcon class="w-5 h-5 text-blue-600" />
+                                <h3 class="text-lg font-medium text-gray-900">Transcoder Jobs</h3>
+                                <Show when={props.totalJobs !== undefined}>
+                                    <span class="text-sm text-gray-500">
+                                        ({props.totalJobs} total)
+                                    </span>
+                                </Show>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <label class="text-sm text-gray-600">
+                                    Show:
+                                    <select
+                                        value={props.pageSize}
+                                        onChange={(e) => props.onPageSizeChange(Number(e.currentTarget.value))}
+                                        class="ml-2 px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value={10}>10</option>
+                                        <option value={25}>25</option>
+                                        <option value={50}>50</option>
+                                        <option value={100}>100</option>
+                                    </select>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Search Input */}
+                        <div class="relative">
+                            <SearchIcon class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Buscar por Input URI o Output URI..."
+                                value={props.searchTerm}
+                                onInput={(e) => props.onSearchChange(e.currentTarget.value)}
+                                class="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            <Show when={props.searchTerm.length > 0}>
+                                <button
+                                    onClick={() => props.onSearchChange('')}
+                                    class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                    title="Limpiar búsqueda"
+                                >
+                                    <XIcon class="w-4 h-4" />
+                                </button>
                             </Show>
                         </div>
-                        <div class="flex items-center space-x-3">
-                            <label class="text-sm text-gray-600">
-                                Show:
-                                <select
-                                    value={props.pageSize}
-                                    onChange={(e) => props.onPageSizeChange(Number(e.currentTarget.value))}
-                                    class="ml-2 px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    <option value={10}>10</option>
-                                    <option value={25}>25</option>
-                                    <option value={50}>50</option>
-                                    <option value={100}>100</option>
-                                </select>
-                            </label>
-                        </div>
+
+                        <Show when={props.searchTerm.length > 0 && !props.isLoading}>
+                            <div class="mt-2 text-sm text-gray-600">
+                                {props.jobs.length > 0
+                                    ? `Encontrados ${props.jobs.length} job${props.jobs.length !== 1 ? 's' : ''} con "${props.searchTerm}"`
+                                    : `No se encontraron jobs con "${props.searchTerm}"`
+                                }
+                            </div>
+                        </Show>
                     </div>
 
                     <div class="overflow-x-auto">
@@ -164,8 +197,27 @@ const JobsTable: Component<JobsTableProps> = (props) => {
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                <For each={props.jobs}>
-                                    {(job) => (
+                                <Show
+                                    when={props.jobs.length > 0}
+                                    fallback={
+                                        <Show when={props.searchTerm.length > 0 && !props.isLoading}>
+                                            <tr>
+                                                <td colspan="6" class="px-6 py-8 text-center">
+                                                    <SearchIcon class="mx-auto w-12 h-12 text-gray-400 mb-3" />
+                                                    <p class="text-gray-600">No se encontraron jobs que coincidan con "{props.searchTerm}"</p>
+                                                    <button
+                                                        onClick={() => props.onSearchChange('')}
+                                                        class="mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                                                    >
+                                                        Limpiar búsqueda
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </Show>
+                                    }
+                                >
+                                    <For each={props.jobs}>
+                                        {(job) => (
                                         <tr
                                             class="hover:bg-gray-50 cursor-pointer transition-colors"
                                             onClick={() => props.onJobClick(job)}
@@ -209,8 +261,9 @@ const JobsTable: Component<JobsTableProps> = (props) => {
                                                 </button>
                                             </td>
                                         </tr>
-                                    )}
-                                </For>
+                                        )}
+                                    </For>
+                                </Show>
                             </tbody>
                         </table>
                     </div>
@@ -230,10 +283,13 @@ const JobsTable: Component<JobsTableProps> = (props) => {
                             <div class="text-sm text-gray-700">
                                 Showing <span class="font-medium">{startIndex()}</span> to{' '}
                                 <span class="font-medium">{endIndex()}</span>
-                                <Show when={props.totalJobs !== undefined}>
+                                <Show when={props.totalJobs !== undefined && props.searchTerm.length === 0}>
                                     {' '}of <span class="font-medium">{props.totalJobs}</span>
                                 </Show>
                                 {' '}jobs
+                                <Show when={props.searchTerm.length > 0}>
+                                    {' '}(búsqueda activa)
+                                </Show>
                             </div>
                             <div class="flex items-center space-x-2">
                                 <button

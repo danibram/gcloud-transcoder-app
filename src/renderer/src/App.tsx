@@ -21,8 +21,25 @@ const App: Component = () => {
     const [currentPageNum, setCurrentPageNum] = createSignal(1);
     const [totalJobs, setTotalJobs] = createSignal<number | undefined>(undefined);
     const [hasNextPage, setHasNextPage] = createSignal(false);
+    const [searchTerm, setSearchTerm] = createSignal('');
+    let searchTimeout: NodeJS.Timeout | null = null;
 
-    const fetchJobs = async (page: number = 1, size: number = pageSize()) => {
+    const handleSearchChange = (term: string) => {
+        setSearchTerm(term);
+
+        // Clear existing timeout
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+
+        // Debounce search - wait 500ms after user stops typing
+        searchTimeout = setTimeout(() => {
+            setCurrentPageNum(1);
+            fetchJobs(1, pageSize(), term);
+        }, 500);
+    };
+
+    const fetchJobs = async (page: number = 1, size: number = pageSize(), search: string = searchTerm()) => {
         try {
             setIsLoading(true);
             setError(null);
@@ -30,7 +47,7 @@ const App: Component = () => {
             // Use settings from store
             const currentSettings = settings();
 
-            const result = await window.electronAPI.listTranscoderJobs(currentSettings, size, page);
+            const result = await window.electronAPI.listTranscoderJobs(currentSettings, size, page, search);
 
             if (result.success && result.data) {
                 setJobs(result.data.jobs);
@@ -72,7 +89,7 @@ const App: Component = () => {
                     <Header
                         onRefresh={() => {
                             setCurrentPageNum(1);
-                            fetchJobs(1, pageSize());
+                            fetchJobs(1, pageSize(), searchTerm());
                         }}
                         onSettings={() => setCurrentPage('settings')}
                         onTemplates={() => setCurrentPage('templates')}
@@ -90,17 +107,19 @@ const App: Component = () => {
                             onJobClick={handleJobClick}
                             onRefresh={() => {
                                 setCurrentPageNum(1);
-                                fetchJobs(1, pageSize());
+                                fetchJobs(1, pageSize(), searchTerm());
                             }}
                             currentPage={currentPageNum()}
                             pageSize={pageSize()}
                             totalJobs={totalJobs()}
                             hasNextPage={hasNextPage()}
-                            onPageChange={(page) => fetchJobs(page, pageSize())}
+                            onPageChange={(page) => fetchJobs(page, pageSize(), searchTerm())}
                             onPageSizeChange={(size) => {
                                 setCurrentPageNum(1);
-                                fetchJobs(1, size);
+                                fetchJobs(1, size, searchTerm());
                             }}
+                            searchTerm={searchTerm()}
+                            onSearchChange={handleSearchChange}
                         />
                     </main>
 

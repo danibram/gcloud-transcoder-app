@@ -57,15 +57,22 @@ interface PaginatedJobsResponse {
 }
 
 // CLI wrapper functions for gcloud transcoder commands
-async function listJobsCLI(settings: GoogleCloudSettings, pageSize: number = 50, pageNumber: number = 1): Promise<PaginatedJobsResponse> {
+async function listJobsCLI(settings: GoogleCloudSettings, pageSize: number = 50, pageNumber: number = 1, searchTerm?: string): Promise<PaginatedJobsResponse> {
     try {
         // Limit total jobs fetched to prevent buffer overflow (max 200 jobs = 4 pages of 50)
         const maxJobsToFetch = 200;
         const limit = Math.min(pageNumber * pageSize, maxJobsToFetch);
 
-        console.log(`Pagination: page=${pageNumber}, pageSize=${pageSize}, calculatedLimit=${limit}, max=${maxJobsToFetch}`);
+        console.log(`Pagination: page=${pageNumber}, pageSize=${pageSize}, calculatedLimit=${limit}, max=${maxJobsToFetch}, searchTerm=${searchTerm || 'none'}`);
 
-        const command = `gcloud transcoder jobs list --location=${settings.location} --project=${settings.projectId} --format=json --sort-by=~createTime --limit=${limit}`;
+        let command = `gcloud transcoder jobs list --location=${settings.location} --project=${settings.projectId} --format=json --sort-by=~createTime --limit=${limit}`;
+
+        // Add filter for search term if provided
+        if (searchTerm && searchTerm.trim()) {
+            const escapedTerm = searchTerm.trim().replace(/"/g, '\\"');
+            // Filter by input URI or output URI containing the search term
+            command += ` --filter="config.inputs.uri:${escapedTerm} OR config.output.uri:${escapedTerm}"`;
+        }
 
         console.log('Executing CLI command:', command);
         const { stdout, stderr } = await execAsync(command, { maxBuffer: 50 * 1024 * 1024 }); // 50MB buffer
@@ -428,16 +435,16 @@ app.on('window-all-closed', () => {
 });
 
 // IPC handlers for Google Cloud Transcoder CLI
-ipcMain.handle('list-transcoder-jobs', async (event, settings?: GoogleCloudSettings, pageSize?: number, pageNumber?: number): Promise<ApiResponse<PaginatedJobsResponse>> => {
+ipcMain.handle('list-transcoder-jobs', async (event, settings?: GoogleCloudSettings, pageSize?: number, pageNumber?: number, searchTerm?: string): Promise<ApiResponse<PaginatedJobsResponse>> => {
     try {
         const useSettings = settings || currentSettings;
         // Validate and sanitize inputs
         const usePageSize = (pageSize && !isNaN(pageSize) && pageSize > 0) ? pageSize : 50;
         const usePageNumber = (pageNumber && !isNaN(pageNumber) && pageNumber > 0) ? pageNumber : 1;
 
-        console.log('Listing jobs using gcloud CLI for project:', useSettings.projectId, 'location:', useSettings.location, 'pageSize:', usePageSize, 'page:', usePageNumber);
+        console.log('Listing jobs using gcloud CLI for project:', useSettings.projectId, 'location:', useSettings.location, 'pageSize:', usePageSize, 'page:', usePageNumber, 'search:', searchTerm || 'none');
 
-        const result = await listJobsCLI(useSettings, usePageSize, usePageNumber);
+        const result = await listJobsCLI(useSettings, usePageSize, usePageNumber, searchTerm);
         return { success: true, data: result };
     } catch (error) {
         console.error('Error listing transcoder jobs via CLI:', error);

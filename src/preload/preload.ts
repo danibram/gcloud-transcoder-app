@@ -49,7 +49,7 @@ interface PaginatedJobsResponse {
 }
 
 interface ElectronAPI {
-    listTranscoderJobs: (settings?: GoogleCloudSettings, pageSize?: number, pageNumber?: number) => Promise<ApiResponse<PaginatedJobsResponse>>;
+    listTranscoderJobs: (settings?: GoogleCloudSettings, pageSize?: number, pageNumber?: number, searchTerm?: string) => Promise<ApiResponse<PaginatedJobsResponse>>;
     getTranscoderJob: (jobId: string, settings?: GoogleCloudSettings) => Promise<ApiResponse<TranscoderJob>>;
     testGoogleCloudConnection: (settings: GoogleCloudSettings) => Promise<ApiResponse<boolean>>;
     updateSettings: (settings: GoogleCloudSettings) => void;
@@ -72,7 +72,7 @@ interface ElectronAPI {
 // the ipcRenderer without exposing the entire object
 const electronAPI: ElectronAPI = {
     // Transcoder API methods
-    listTranscoderJobs: (settings?: GoogleCloudSettings, pageSize?: number, pageNumber?: number) => ipcRenderer.invoke('list-transcoder-jobs', settings, pageSize, pageNumber),
+    listTranscoderJobs: (settings?: GoogleCloudSettings, pageSize?: number, pageNumber?: number, searchTerm?: string) => ipcRenderer.invoke('list-transcoder-jobs', settings, pageSize, pageNumber, searchTerm),
     getTranscoderJob: (jobId: string, settings?: GoogleCloudSettings) => ipcRenderer.invoke('get-transcoder-job', jobId, settings),
 
     // Settings methods
