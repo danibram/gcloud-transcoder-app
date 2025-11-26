@@ -23,6 +23,7 @@ const TemplatesPage: Component<TemplatesPageProps> = (props) => {
     const [modalMode, setModalMode] = createSignal<'view' | 'edit' | 'create'>('view');
     const [isSubmitting, setIsSubmitting] = createSignal(false);
     const [formData, setFormData] = createSignal<Partial<JobTemplate>>({});
+    const [modalError, setModalError] = createSignal<string | null>(null);
 
     const fetchTemplates = async () => {
         try {
@@ -47,6 +48,7 @@ const TemplatesPage: Component<TemplatesPageProps> = (props) => {
 
     const openModal = (mode: 'view' | 'edit' | 'create', template?: JobTemplate) => {
         setModalMode(mode);
+        setModalError(null); // Clear any previous modal errors
         if (template) {
             setSelectedTemplate(template);
             setFormData({
@@ -72,11 +74,13 @@ const TemplatesPage: Component<TemplatesPageProps> = (props) => {
         setSelectedTemplate(null);
         setFormData({});
         setIsSubmitting(false);
+        setModalError(null);
     };
 
     const handleSubmit = async () => {
         try {
             setIsSubmitting(true);
+            setModalError(null); // Clear previous modal errors
             const currentSettings = settings();
 
             let result;
@@ -91,11 +95,12 @@ const TemplatesPage: Component<TemplatesPageProps> = (props) => {
                 closeModal();
                 await fetchTemplates(); // Refresh list
             } else {
-                setError(result?.error || 'Operation failed');
+                // Show the error in the modal for better visibility
+                setModalError(result?.error || 'Operation failed');
             }
         } catch (err) {
             console.error('Error submitting template:', err);
-            setError('Failed to save template');
+            setModalError('Failed to save template: ' + (err instanceof Error ? err.message : String(err)));
         } finally {
             setIsSubmitting(false);
         }
@@ -326,6 +331,21 @@ const TemplatesPage: Component<TemplatesPageProps> = (props) => {
 
                         {/* Modal Content */}
                         <div class="p-6 space-y-6">
+                            {/* Modal Error Message */}
+                            <Show when={modalError()}>
+                                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                                    <div class="flex items-start">
+                                        <AlertCircleIcon class="w-5 h-5 text-red-600 mr-3 flex-shrink-0 mt-0.5" />
+                                        <div class="flex-1 min-w-0">
+                                            <h3 class="text-sm font-medium text-red-800 mb-1">Error</h3>
+                                            <pre class="text-sm text-red-700 whitespace-pre-wrap break-words font-mono bg-red-100 p-2 rounded max-h-48 overflow-auto">
+                                                {modalError()}
+                                            </pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Show>
+
                             <Show when={modalMode() === 'view'} fallback={
                                 <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-6">
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -347,6 +367,7 @@ const TemplatesPage: Component<TemplatesPageProps> = (props) => {
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                                 Display Name
+                                                <span class="text-xs text-amber-600 ml-2">(Not supported by API - for reference only)</span>
                                             </label>
                                             <input
                                                 type="text"
@@ -354,7 +375,11 @@ const TemplatesPage: Component<TemplatesPageProps> = (props) => {
                                                 onInput={(e) => updateFormField('displayName', e.currentTarget.value)}
                                                 placeholder="My Template"
                                                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                disabled
                                             />
+                                            <p class="mt-1 text-xs text-gray-500">
+                                                The Google Cloud Transcoder API does not support display names for templates.
+                                            </p>
                                         </div>
                                     </div>
 

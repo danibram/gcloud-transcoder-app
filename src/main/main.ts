@@ -232,11 +232,16 @@ async function createTemplateCLI(template: Partial<JobTemplate>, settings: Googl
         const path = require('path');
 
         const tempFile = path.join(os.tmpdir(), `template-${Date.now()}.json`);
-        const templateConfig = {
-            displayName: template.displayName || '',
+        // Note: The gcloud transcoder templates create --file only accepts 'config' and 'labels'
+        // displayName is NOT a valid field for the JSON file format
+        const templateConfig: { config: any; labels?: { [key: string]: string } } = {
             config: template.config || {},
-            labels: template.labels || {}
         };
+
+        // Only add labels if there are any
+        if (template.labels && Object.keys(template.labels).length > 0) {
+            templateConfig.labels = template.labels;
+        }
 
         fs.writeFileSync(tempFile, JSON.stringify(templateConfig, null, 2));
 
@@ -244,6 +249,8 @@ async function createTemplateCLI(template: Partial<JobTemplate>, settings: Googl
         const command = `gcloud transcoder templates create ${templateName} --location=${settings.location} --project=${settings.projectId} --file=${tempFile} --format=json`;
 
         console.log('Executing CLI command:', command);
+        console.log('Template config being sent:', JSON.stringify(templateConfig, null, 2));
+
         const { stdout } = await execAsync(command);
 
         // Clean up temp file
@@ -259,8 +266,12 @@ async function createTemplateCLI(template: Partial<JobTemplate>, settings: Googl
             createTime: createdTemplate.createTime || '',
             updateTime: createdTemplate.updateTime || '',
         };
-    } catch (error) {
+    } catch (error: any) {
         console.error('CLI Error creating template:', error);
+        // Include stderr in the error message for better debugging
+        if (error.stderr) {
+            error.message = `${error.message}\n\nGCloud Output:\n${error.stderr}`;
+        }
         throw error;
     }
 }
@@ -606,7 +617,7 @@ ipcMain.handle('create-job-template', async (event, template: Partial<JobTemplat
 
         const createdTemplate = await createTemplateCLI(template, useSettings);
         return { success: true, data: createdTemplate };
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating job template via CLI:', error);
 
         let errorMessage = 'Failed to create template';
@@ -614,10 +625,21 @@ ipcMain.handle('create-job-template', async (event, template: Partial<JobTemplat
             if (error.message.includes('ALREADY_EXISTS')) {
                 errorMessage = 'Template with this name already exists. Please choose a different name.';
             } else if (error.message.includes('INVALID_ARGUMENT')) {
-                errorMessage = 'Invalid template configuration. Please check your settings.';
+                // Extract the detailed error from stderr if available
+                const stderrMatch = error.message.match(/GCloud Output:\n([\s\S]*)/);
+                if (stderrMatch) {
+                    errorMessage = `Invalid template configuration:\n${stderrMatch[1]}`;
+                } else {
+                    errorMessage = `Invalid template configuration. Please check your settings.\n\nDetails: ${error.message}`;
+                }
             } else {
                 errorMessage = `CLI Error: ${error.message}`;
             }
+        }
+
+        // Also include stderr if available in the error object
+        if (error.stderr) {
+            errorMessage += `\n\nGCloud stderr:\n${error.stderr}`;
         }
 
         return {
