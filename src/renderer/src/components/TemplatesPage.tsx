@@ -79,6 +79,19 @@ const TemplatesPage: Component<TemplatesPageProps> = (props) => {
 
     const handleSubmit = async () => {
         try {
+            // For edit mode, warn user that update = delete + recreate
+            if (modalMode() === 'edit') {
+                const confirmed = confirm(
+                    '⚠️ Warning: Google Cloud Transcoder API does not support direct template updates.\n\n' +
+                    'This operation will DELETE the existing template and CREATE a new one with the same name.\n\n' +
+                    'If something fails during recreation, the template may be lost.\n\n' +
+                    'Do you want to continue?'
+                );
+                if (!confirmed) {
+                    return;
+                }
+            }
+
             setIsSubmitting(true);
             setModalError(null); // Clear previous modal errors
             const currentSettings = settings();
