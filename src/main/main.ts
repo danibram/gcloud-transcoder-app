@@ -232,11 +232,16 @@ async function createTemplateCLI(template: Partial<JobTemplate>, settings: Googl
         const path = require('path');
 
         const tempFile = path.join(os.tmpdir(), `template-${Date.now()}.json`);
-        const templateConfig = {
-            displayName: template.displayName || '',
+        // Note: The Transcoder API template file only accepts 'config' and 'labels' fields
+        // 'displayName' is NOT a valid field and will cause an error
+        const templateConfig: { config: any; labels?: { [key: string]: string } } = {
             config: template.config || {},
-            labels: template.labels || {}
         };
+
+        // Only add labels if they exist and are not empty
+        if (template.labels && Object.keys(template.labels).length > 0) {
+            templateConfig.labels = template.labels;
+        }
 
         fs.writeFileSync(tempFile, JSON.stringify(templateConfig, null, 2));
 
