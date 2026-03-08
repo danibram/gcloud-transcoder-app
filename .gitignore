@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+**/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -7,14 +8,26 @@ yarn-error.log*
 # Build outputs
 dist/
 build/
+coverage/
+.nyc_output/
 release/
+target/
+src-tauri/target/
+ui/dist/
 
-# Environment variables
+# Environment variables and local config
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+!.env.*.example
+
+# Security-sensitive credential files
+**/service-account*.json
+**/credentials*.json
+**/*-key.json
+*.pem
+*.p12
+*.key
 
 # IDE and editor files
 .vscode/
@@ -22,6 +35,7 @@ release/
 *.swp
 *.swo
 *~
+.eslintcache
 
 # OS generated files
 .DS_Store
@@ -32,75 +46,24 @@ release/
 ehthumbs.db
 Thumbs.db
 
-# Logs
-logs
+# Logs and runtime artifacts
+logs/
 *.log
-
-# Runtime data
-pids
 *.pid
-*.seed
 *.pid.lock
+*.seed
 
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
-
-# nyc test coverage
-.nyc_output
-
-# Dependency directories
-jspm_packages/
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Microbundle cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# Next.js build output
-.next
-
-# Nuxt.js build / generate output
-.nuxt
-
-# Gatsby files
+# Package manager caches
+.npm/
 .cache/
-public
+.parcel-cache/
 
-# Storybook build outputs
-.out
-.storybook-out
-
-# Temporary folders
+# Misc temporary files
 tmp/
 temp/
 
-# Electron specific
-app/dist/
-app/build/
-app/node_modules/
-
-# Google Cloud credentials (security)
-**/service-account*.json
-**/credentials*.json
-**/*-key.json
+# Old app artifacts kept local-only
+public/
+!ui/public/
+!ui/public/**
+agent.md

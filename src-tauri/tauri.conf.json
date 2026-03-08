@@ -1,0 +1,32 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Transcoder API Dashboard",
+  "version": "0.1.0",
+  "identifier": "com.dbr.transcoder-api-dashboard",
+  "build": {
+    "beforeDevCommand": "sh -c 'if [ -f ui/package.json ]; then cd ui && npm run dev; else cd ../ui && npm run dev; fi'",
+    "beforeBuildCommand": "sh -c 'if [ -f ui/package.json ]; then cd ui && npm run build; else cd ../ui && npm run build; fi'",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../ui/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Transcoder API Dashboard",
+        "width": 1400,
+        "height": 900,
+        "minWidth": 1000,
+        "minHeight": 600,
+        "resizable": true,
+        "visible": true
+      }
+    ]
+  },
+  "bundle": {
+    "active": false,
+    "icon": [
+      "icons/icon.png"
+    ]
+  }
+}
