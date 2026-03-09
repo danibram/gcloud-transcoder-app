@@ -24,8 +24,14 @@ if (!uiDir) {
 }
 
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const result = spawnSync(npmCommand, ['--prefix', uiDir, 'run', command], {
+const result = spawnSync(npmCommand, ['run', command], {
+  cwd: uiDir,
   stdio: 'inherit',
 });
+
+if (result.error) {
+  console.error(result.error.message);
+  process.exit(1);
+}
 
 process.exit(result.status ?? 1);
