@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "identifier": "com.dbr.gcloud-transcoder-app",
   "build": {
-    "beforeDevCommand": "cd ../ui && npm run dev",
-    "beforeBuildCommand": "cd ../ui && npm run build",
+    "beforeDevCommand": "node -e \"const { existsSync } = require('node:fs'); const { spawnSync } = require('node:child_process'); const dir = existsSync('ui/package.json') ? 'ui' : '../ui'; const cmd = process.platform === 'win32' ? 'npm.cmd' : 'npm'; const result = spawnSync(cmd, ['--prefix', dir, 'run', 'dev'], { stdio: 'inherit' }); process.exit(result.status ?? 1);\"",
+    "beforeBuildCommand": "node -e \"const { existsSync } = require('node:fs'); const { spawnSync } = require('node:child_process'); const dir = existsSync('ui/package.json') ? 'ui' : '../ui'; const cmd = process.platform === 'win32' ? 'npm.cmd' : 'npm'; const result = spawnSync(cmd, ['--prefix', dir, 'run', 'build'], { stdio: 'inherit' }); process.exit(result.status ?? 1);\"",
     "devUrl": "http://localhost:5173",
     "frontendDist": "../ui/dist"
   },
