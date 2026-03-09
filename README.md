@@ -116,6 +116,19 @@ Build the desktop app:
 cargo tauri build --manifest-path src-tauri/Cargo.toml
 ```
 
+## Releases
+
+GitHub releases are built by the `Release` workflow in `.github/workflows/release.yml`.
+
+Normal release cycle:
+
+1. Update `CHANGELOG.md`
+2. Bump the app version in the project files
+3. Commit the release changes
+4. Push a tag like `v1.0.0`
+
+You can also run the workflow manually and provide a version, but it will only publish if that version already matches the checked-in project files.
+
 ## Testing
 
 Rust tests:

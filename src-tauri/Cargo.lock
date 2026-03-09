@@ -843,6 +843,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "gcloud-transcoder-app"
+version = "1.0.0"
+dependencies = [
+ "serde",
+ "tauri",
+ "tauri-build",
+ "transcoder_api_core",
+]
+
+[[package]]
 name = "gdk"
 version = "0.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3597,18 +3607,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "gcloud-transcoder-app"
-version = "0.1.0"
-dependencies = [
- "serde",
- "tauri",
- "tauri-build",
- "transcoder_api_core",
-]
-
-[[package]]
 name = "transcoder_api_core"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "chrono",
  "dirs",

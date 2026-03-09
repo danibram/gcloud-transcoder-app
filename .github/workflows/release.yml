@@ -1,0 +1,166 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version without the leading v (example: 1.0.0)
+        required: true
+        type: string
+      draft:
+        description: Create the GitHub release as a draft
+        required: true
+        default: false
+        type: boolean
+      prerelease:
+        description: Mark the GitHub release as a prerelease
+        required: true
+        default: false
+        type: boolean
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  publish-tauri:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: --target aarch64-apple-darwin
+            rust_targets: aarch64-apple-darwin
+          - platform: macos-latest
+            args: --target x86_64-apple-darwin
+            rust_targets: x86_64-apple-darwin
+          - platform: ubuntu-22.04
+            args: ""
+            rust_targets: ""
+          - platform: windows-latest
+            args: ""
+            rust_targets: ""
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux system dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            curl \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libfuse2 \
+            file
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Resolve release metadata
+        id: release_meta
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_DRAFT: ${{ inputs.draft }}
+          INPUT_PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          node <<'EOF'
+          const fs = require('node:fs');
+
+          const eventName = process.env.GITHUB_EVENT_NAME;
+          const refName = process.env.GITHUB_REF_NAME || '';
+          const requestedVersion = eventName === 'push'
+            ? refName.replace(/^v/, '')
+            : (process.env.INPUT_VERSION || '').trim();
+
+          if (!requestedVersion) {
+            throw new Error('A release version is required.');
+          }
+
+          if (!/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(requestedVersion)) {
+            throw new Error(`Invalid semantic version: ${requestedVersion}`);
+          }
+
+          const expectedVersions = [
+            ['Cargo.toml', /^version = "([^"]+)"$/m],
+            ['src-tauri/Cargo.toml', /^version = "([^"]+)"$/m],
+            ['src-tauri/tauri.conf.json', /"version": "([^"]+)"/m],
+            ['ui/package.json', /"version": "([^"]+)"/m]
+          ];
+
+          const mismatches = [];
+          for (const [file, pattern] of expectedVersions) {
+            const content = fs.readFileSync(file, 'utf8');
+            const match = content.match(pattern);
+            const version = match && match[1];
+            if (version !== requestedVersion) {
+              mismatches.push(`${file}=${version ?? 'missing'}`);
+            }
+          }
+
+          if (mismatches.length > 0) {
+            throw new Error(
+              `Release version ${requestedVersion} does not match project files: ${mismatches.join(', ')}`
+            );
+          }
+
+          const isPush = eventName === 'push';
+          const draft = isPush ? 'false' : String(process.env.INPUT_DRAFT === 'true');
+          const prerelease = isPush ? 'false' : String(process.env.INPUT_PRERELEASE === 'true');
+          const output = process.env.GITHUB_OUTPUT;
+
+          fs.appendFileSync(output, `version=${requestedVersion}\n`);
+          fs.appendFileSync(output, `tag=v${requestedVersion}\n`);
+          fs.appendFileSync(output, `draft=${draft}\n`);
+          fs.appendFileSync(output, `prerelease=${prerelease}\n`);
+          EOF
+
+      - name: Install Rust toolchain
+        if: ${{ matrix.rust_targets != '' }}
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
+
+      - name: Install Rust toolchain
+        if: ${{ matrix.rust_targets == '' }}
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust artifacts
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri -> target
+
+      - name: Install frontend dependencies
+        run: npm --prefix ui ci
+
+      - name: Build and publish Tauri app
+        uses: tauri-apps/tauri-action@v0.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: src-tauri
+          tagName: ${{ steps.release_meta.outputs.tag }}
+          releaseName: Transcoder App v${{ steps.release_meta.outputs.version }}
+          releaseBody: |
+            Desktop builds for Transcoder App.
+
+            Download the installer or bundle asset for your platform from this release.
+          releaseCommitish: ${{ github.sha }}
+          releaseDraft: ${{ steps.release_meta.outputs.draft }}
+          prerelease: ${{ steps.release_meta.outputs.prerelease }}
+          generateReleaseNotes: true
+          args: ${{ matrix.args }}
