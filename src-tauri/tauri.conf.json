@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "identifier": "com.dbr.gcloud-transcoder-app",
   "build": {
-    "beforeDevCommand": "sh -c 'if [ -f ui/package.json ]; then cd ui && npm run dev; else cd ../ui && npm run dev; fi'",
-    "beforeBuildCommand": "sh -c 'if [ -f ui/package.json ]; then cd ui && npm run build; else cd ../ui && npm run build; fi'",
+    "beforeDevCommand": "cd ../ui && npm run dev",
+    "beforeBuildCommand": "cd ../ui && npm run build",
     "devUrl": "http://localhost:5173",
     "frontendDist": "../ui/dist"
   },

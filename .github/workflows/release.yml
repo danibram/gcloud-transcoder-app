@@ -25,7 +25,96 @@ permissions:
   contents: write
 
 jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.ensure_release.outputs.release_id }}
+    steps:
+      - name: Resolve release metadata
+        id: release_meta
+        shell: bash
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_DRAFT: ${{ inputs.draft }}
+          INPUT_PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          node <<'EOF'
+          const fs = require('node:fs');
+
+          const eventName = process.env.GITHUB_EVENT_NAME;
+          const refName = process.env.GITHUB_REF_NAME || '';
+          const requestedVersion = eventName === 'push'
+            ? refName.replace(/^v/, '')
+            : (process.env.INPUT_VERSION || '').trim();
+
+          if (!requestedVersion) {
+            throw new Error('A release version is required.');
+          }
+
+          if (!/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(requestedVersion)) {
+            throw new Error(`Invalid semantic version: ${requestedVersion}`);
+          }
+
+          const isPush = eventName === 'push';
+          const draft = isPush ? false : process.env.INPUT_DRAFT === 'true';
+          const prerelease = isPush ? false : process.env.INPUT_PRERELEASE === 'true';
+          const output = process.env.GITHUB_OUTPUT;
+
+          fs.appendFileSync(output, `version=${requestedVersion}\n`);
+          fs.appendFileSync(output, `tag=v${requestedVersion}\n`);
+          fs.appendFileSync(output, `draft=${draft}\n`);
+          fs.appendFileSync(output, `prerelease=${prerelease}\n`);
+          EOF
+
+      - name: Ensure GitHub release exists
+        id: ensure_release
+        uses: actions/github-script@v7
+        env:
+          RELEASE_TAG: ${{ steps.release_meta.outputs.tag }}
+          RELEASE_NAME: Transcoder App v${{ steps.release_meta.outputs.version }}
+          RELEASE_BODY: |
+            Desktop builds for Transcoder App.
+
+            Download the installer or bundle asset for your platform from this release.
+          RELEASE_DRAFT: ${{ steps.release_meta.outputs.draft }}
+          RELEASE_PRERELEASE: ${{ steps.release_meta.outputs.prerelease }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const tag = process.env.RELEASE_TAG;
+            const name = process.env.RELEASE_NAME;
+            const body = process.env.RELEASE_BODY;
+            const draft = process.env.RELEASE_DRAFT === 'true';
+            const prerelease = process.env.RELEASE_PRERELEASE === 'true';
+
+            try {
+              const { data: release } = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag,
+              });
+              core.setOutput('release_id', String(release.id));
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+
+              const { data: release } = await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: tag,
+                name,
+                body,
+                draft,
+                prerelease,
+                target_commitish: context.sha,
+                generate_release_notes: true,
+              });
+              core.setOutput('release_id', String(release.id));
+            }
+
   publish-tauri:
+    needs: prepare-release
     strategy:
       fail-fast: false
       matrix:
@@ -160,6 +249,7 @@ jobs:
             Desktop builds for Transcoder App.
 
             Download the installer or bundle asset for your platform from this release.
+          releaseId: ${{ needs.prepare-release.outputs.release_id }}
           releaseCommitish: ${{ github.sha }}
           releaseDraft: ${{ steps.release_meta.outputs.draft }}
           prerelease: ${{ steps.release_meta.outputs.prerelease }}
