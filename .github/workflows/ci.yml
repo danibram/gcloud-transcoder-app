@@ -100,27 +100,10 @@ jobs:
       - name: Install frontend dependencies
         run: npm --prefix ui ci
 
-      - name: Generate temporary signing keypair
-        shell: bash
-        run: |
-          PASSWORD="$(node -e "console.log(require('node:crypto').randomBytes(24).toString('base64url'))")"
-          PRIVATE_KEY_DELIMITER="TAURI_PRIVATE_KEY_$(node -e "console.log(require('node:crypto').randomUUID().replace(/-/g, ''))")"
-          PUBLIC_KEY_DELIMITER="TAURI_PUBLIC_KEY_$(node -e "console.log(require('node:crypto').randomUUID().replace(/-/g, ''))")"
-          echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=${PASSWORD}" >> "$GITHUB_ENV"
-          npx @tauri-apps/cli@v2 signer generate --ci -w "$RUNNER_TEMP/tauri-updater.key" -p "$PASSWORD"
-          {
-            echo "TAURI_SIGNING_PRIVATE_KEY<<${PRIVATE_KEY_DELIMITER}"
-            cat "$RUNNER_TEMP/tauri-updater.key"
-            echo "${PRIVATE_KEY_DELIMITER}"
-          } >> "$GITHUB_ENV"
-          {
-            echo "TAURI_UPDATER_PUBLIC_KEY<<${PUBLIC_KEY_DELIMITER}"
-            cat "$RUNNER_TEMP/tauri-updater.key.pub"
-            echo "${PUBLIC_KEY_DELIMITER}"
-          } >> "$GITHUB_ENV"
-
       - name: Generate updater config
         shell: bash
+        env:
+          TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY != '' && vars.TAURI_UPDATER_PUBLIC_KEY || secrets.TAURI_UPDATER_PUBLIC_KEY }}
         run: |
           node <<'EOF'
           const fs = require('node:fs');
@@ -162,8 +145,8 @@ jobs:
         uses: tauri-apps/tauri-action@v0.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ env.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: src-tauri
           args: ${{ matrix.args }} --config tauri.release.conf.json
