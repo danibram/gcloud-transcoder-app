@@ -162,7 +162,6 @@ More detail: [docs/specs/app-configuration.md](docs/specs/app-configuration.md)
 - [docs/specs/job-observability.md](docs/specs/job-observability.md)
 - [docs/specs/app-configuration.md](docs/specs/app-configuration.md)
 - [docs/specs/limitations-and-behavior.md](docs/specs/limitations-and-behavior.md)
-- [docs/screenshots.md](docs/screenshots.md)
 
 ## License
 
