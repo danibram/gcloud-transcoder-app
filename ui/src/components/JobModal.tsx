@@ -252,19 +252,19 @@ const JobModal: Component<JobModalProps> = (props) => {
                                                 Processed Videos
                                             </h3>
                                             <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                                                <table class="min-w-full divide-y divide-gray-200">
+                                                <table class="w-full divide-y divide-gray-200">
                                                     <thead class="bg-gray-50">
                                                         <tr>
-                                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 File Name
                                                             </th>
-                                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Storage URL (gs://)
                                                             </th>
-                                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Public URL
                                                             </th>
-                                                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                            <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Actions
                                                             </th>
                                                         </tr>
@@ -273,10 +273,10 @@ const JobModal: Component<JobModalProps> = (props) => {
                                                         <For each={extractOutputVideos(job())}>
                                                             {(video, index) => (
                                                                 <tr class="hover:bg-gray-50">
-                                                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                                    <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                                                                         {video.name}
                                                                     </td>
-                                                                    <td class="px-4 py-3 text-sm text-gray-600">
+                                                                    <td class="px-3 py-2 text-sm text-gray-600">
                                                                         <div class="flex items-center space-x-2">
                                                                             <span class="font-mono text-xs break-all">{video.url}</span>
                                                                             <button
@@ -296,7 +296,7 @@ const JobModal: Component<JobModalProps> = (props) => {
                                                                             </button>
                                                                         </div>
                                                                     </td>
-                                                                    <td class="px-4 py-3 text-sm text-gray-600">
+                                                                    <td class="px-3 py-2 text-sm text-gray-600">
                                                                         <div class="flex items-center space-x-2">
                                                                             <a
                                                                                 href={getPublicUrl(video.url)}
@@ -323,7 +323,7 @@ const JobModal: Component<JobModalProps> = (props) => {
                                                                             </button>
                                                                         </div>
                                                                     </td>
-                                                                    <td class="px-4 py-3 whitespace-nowrap text-right text-sm">
+                                                                    <td class="px-3 py-2 whitespace-nowrap text-right text-sm">
                                                                         <a
                                                                             href={getPublicUrl(video.url)}
                                                                             target="_blank"
@@ -573,4 +573,3 @@ const JobModal: Component<JobModalProps> = (props) => {
 };
 
 export default JobModal;
-

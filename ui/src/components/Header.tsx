@@ -21,20 +21,18 @@ const Header: Component<HeaderProps> = (props) => {
 
     return (
         <header class="bg-white border-b border-gray-200 shadow-sm">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="w-full px-4 sm:px-6 lg:px-8">
                 <div
-                    class="h-8 flex items-center cursor-move select-none"
-                    data-tauri-drag-region
-                    onMouseDown={handleWindowDrag}
+                    class="flex justify-between items-center py-3 gap-4"
                 >
-                    <div class="w-[78px] shrink-0" aria-hidden="true" />
-                    <div class="flex-1" />
-                </div>
-
-                <div class="flex justify-between items-center pb-4 gap-4">
-                    <div class="flex items-center space-x-4 min-w-0 flex-1">
-                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
-                            <MonitorIcon class="w-6 h-6 text-white" />
+                    <div
+                        class="flex items-center space-x-4 min-w-0 flex-1 cursor-move select-none"
+                        data-tauri-drag-region
+                        onMouseDown={handleWindowDrag}
+                    >
+                        <div class="w-[52px] shrink-0" aria-hidden="true" />
+                        <div class="w-10 h-10 shrink-0 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
+                            <MonitorIcon class="w-5 h-5 text-white" />
                         </div>
                         <div class="min-w-0">
                             <h1 class="text-2xl font-bold text-gray-900">

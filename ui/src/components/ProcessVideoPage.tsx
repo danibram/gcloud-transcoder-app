@@ -84,7 +84,7 @@ const ProcessVideoPage: Component<ProcessVideoPageProps> = (props) => {
         <div class="min-h-screen bg-gray-50">
             {/* Header */}
             <div class="bg-white border-b border-gray-200 shadow-sm">
-                <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="w-full px-4 sm:px-6 lg:px-8">
                     <div class="flex items-center justify-between py-6">
                         <div class="flex items-center space-x-4">
                             <button
@@ -277,8 +277,6 @@ const ProcessVideoPage: Component<ProcessVideoPageProps> = (props) => {
 };
 
 export default ProcessVideoPage;
-
-
 
 
 

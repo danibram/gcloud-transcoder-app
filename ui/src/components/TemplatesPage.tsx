@@ -144,7 +144,7 @@ const TemplatesPage: Component<TemplatesPageProps> = (props) => {
         <div class="min-h-screen bg-gray-50">
             {/* Header */}
             <div class="bg-white border-b border-gray-200 shadow-sm">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="w-full px-4 sm:px-6 lg:px-8">
                     <div class="flex items-center justify-between py-6">
                         <div class="flex items-center space-x-4">
                             <button
@@ -186,7 +186,7 @@ const TemplatesPage: Component<TemplatesPageProps> = (props) => {
             </div>
 
             {/* Content */}
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="w-full px-4 sm:px-6 lg:px-8 py-8">
                 {/* Error Message */}
                 <Show when={error()}>
                     <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
@@ -232,34 +232,34 @@ const TemplatesPage: Component<TemplatesPageProps> = (props) => {
                                 <table class="w-full">
                                     <thead class="bg-gray-50">
                                         <tr>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Display Name</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Updated</th>
-                                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Display Name</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Updated</th>
+                                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody class="bg-white divide-y divide-gray-200">
                                         <For each={templates()}>
                                             {(template) => (
                                                 <tr class="hover:bg-gray-50 transition-colors">
-                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                    <td class="px-4 py-2 whitespace-nowrap">
                                                         <div class="text-sm font-medium text-gray-900">
                                                             {extractTemplateId(template.name)}
                                                         </div>
                                                     </td>
-                                                    <td class="px-6 py-4 whitespace-nowrap">
+                                                    <td class="px-4 py-2 whitespace-nowrap">
                                                         <div class="text-sm text-gray-900">
                                                             {template.displayName || 'N/A'}
                                                         </div>
                                                     </td>
-                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                                                         {formatDate(template.createTime)}
                                                     </td>
-                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                                                         {formatDate(template.updateTime)}
                                                     </td>
-                                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <td class="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
                                                         <div class="flex items-center justify-end space-x-2">
                                                             <button
                                                                 onClick={() => openModal('view', template)}
@@ -467,7 +467,6 @@ const TemplatesPage: Component<TemplatesPageProps> = (props) => {
 };
 
 export default TemplatesPage;
-
 
 
 

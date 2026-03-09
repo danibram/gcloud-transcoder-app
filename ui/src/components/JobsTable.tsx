@@ -173,25 +173,25 @@ const JobsTable: Component<JobsTableProps> = (props) => {
                     </div>
 
                     <div class="flex-1 min-h-0 overflow-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
+                        <table class="w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50 sticky top-0 z-10">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Job ID
                                     </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Status
                                     </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Input URI
                                     </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Output URI
                                     </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Created
                                     </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Actions
                                     </th>
                                 </tr>
@@ -202,7 +202,7 @@ const JobsTable: Component<JobsTableProps> = (props) => {
                                     fallback={
                                         <Show when={props.searchTerm.length > 0 && !props.isLoading}>
                                             <tr>
-                                                <td colspan="6" class="px-6 py-8 text-center">
+                                                <td colspan="6" class="px-4 py-8 text-center">
                                                     <SearchIcon class="mx-auto w-12 h-12 text-gray-400 mb-3" />
                                                     <p class="text-gray-600">No se encontraron jobs que coincidan con "{props.searchTerm}"</p>
                                                     <button
@@ -222,33 +222,33 @@ const JobsTable: Component<JobsTableProps> = (props) => {
                                             class="hover:bg-gray-50 cursor-pointer transition-colors"
                                             onClick={() => props.onJobClick(job)}
                                         >
-                                            <td class="px-6 py-4 whitespace-nowrap">
+                                            <td class="px-4 py-2 whitespace-nowrap">
                                                 <div class="text-sm font-medium text-gray-900">
                                                     {getJobId(job.name)}
                                                 </div>
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <span class={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStateColor(job.state || '')}`}>
+                                            <td class="px-4 py-2 whitespace-nowrap">
+                                                <span class={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getStateColor(job.state || '')}`}>
                                                     {job.state || 'Unknown'}
                                                 </span>
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
+                                            <td class="px-4 py-2 whitespace-nowrap">
                                                 <div class="text-sm text-gray-900" title={job.inputUri}>
                                                     {truncateUri(job.inputUri || '')}
                                                 </div>
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
+                                            <td class="px-4 py-2 whitespace-nowrap">
                                                 <div class="text-sm text-gray-900" title={job.outputUri}>
                                                     {truncateUri(job.outputUri || '')}
                                                 </div>
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
+                                            <td class="px-4 py-2 whitespace-nowrap">
                                                 <div class="flex items-center text-sm text-gray-500">
                                                     <CalendarIcon class="w-4 h-4 mr-1" />
                                                     {formatDate(job.createTime || '')}
                                                 </div>
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <td class="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
