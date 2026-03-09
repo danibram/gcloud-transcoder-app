@@ -9,6 +9,11 @@ if (!command) {
   process.exit(1);
 }
 
+if (!/^[A-Za-z0-9:_-]+$/.test(command)) {
+  console.error(`Invalid npm script name: ${command}`);
+  process.exit(1);
+}
+
 const candidates = [
   path.resolve(process.cwd(), 'ui'),
   path.resolve(process.cwd(), '../ui'),
@@ -23,9 +28,9 @@ if (!uiDir) {
   process.exit(1);
 }
 
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const result = spawnSync(npmCommand, ['run', command], {
+const result = spawnSync('npm', ['run', command], {
   cwd: uiDir,
+  shell: process.platform === 'win32',
   stdio: 'inherit',
 });
 
