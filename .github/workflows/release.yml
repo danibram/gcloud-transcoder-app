@@ -73,6 +73,7 @@ jobs:
 
       - name: Resolve release metadata
         id: release_meta
+        shell: bash
         env:
           INPUT_VERSION: ${{ inputs.version }}
           INPUT_DRAFT: ${{ inputs.draft }}
