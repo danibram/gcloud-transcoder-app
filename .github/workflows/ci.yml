@@ -104,17 +104,19 @@ jobs:
         shell: bash
         run: |
           PASSWORD="$(node -e "console.log(require('node:crypto').randomBytes(24).toString('base64url'))")"
+          PRIVATE_KEY_DELIMITER="TAURI_PRIVATE_KEY_$(node -e "console.log(require('node:crypto').randomUUID().replace(/-/g, ''))")"
+          PUBLIC_KEY_DELIMITER="TAURI_PUBLIC_KEY_$(node -e "console.log(require('node:crypto').randomUUID().replace(/-/g, ''))")"
           echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=${PASSWORD}" >> "$GITHUB_ENV"
           npx @tauri-apps/cli@v2 signer generate --ci -w "$RUNNER_TEMP/tauri-updater.key" -p "$PASSWORD"
           {
-            echo 'TAURI_SIGNING_PRIVATE_KEY<<EOF'
+            echo "TAURI_SIGNING_PRIVATE_KEY<<${PRIVATE_KEY_DELIMITER}"
             cat "$RUNNER_TEMP/tauri-updater.key"
-            echo 'EOF'
+            echo "${PRIVATE_KEY_DELIMITER}"
           } >> "$GITHUB_ENV"
           {
-            echo 'TAURI_UPDATER_PUBLIC_KEY<<EOF'
+            echo "TAURI_UPDATER_PUBLIC_KEY<<${PUBLIC_KEY_DELIMITER}"
             cat "$RUNNER_TEMP/tauri-updater.key.pub"
-            echo 'EOF'
+            echo "${PUBLIC_KEY_DELIMITER}"
           } >> "$GITHUB_ENV"
 
       - name: Generate updater config
