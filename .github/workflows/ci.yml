@@ -35,3 +35,133 @@ jobs:
 
       - name: Build UI
         run: npm --prefix ui run build
+
+  release-build-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: --target aarch64-apple-darwin
+            rust_targets: aarch64-apple-darwin
+          - platform: macos-latest
+            args: --target x86_64-apple-darwin
+            rust_targets: x86_64-apple-darwin
+          - platform: ubuntu-22.04
+            args: ""
+            rust_targets: ""
+          - platform: windows-latest
+            args: ""
+            rust_targets: ""
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux system dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            curl \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libfuse2 \
+            file
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install Rust toolchain
+        if: ${{ matrix.rust_targets != '' }}
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
+
+      - name: Install Rust toolchain
+        if: ${{ matrix.rust_targets == '' }}
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust artifacts
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri -> target
+
+      - name: Install frontend dependencies
+        run: npm --prefix ui ci
+
+      - name: Generate temporary signing keypair
+        shell: bash
+        run: |
+          PASSWORD="$(node -e "console.log(require('node:crypto').randomBytes(24).toString('base64url'))")"
+          echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=${PASSWORD}" >> "$GITHUB_ENV"
+          npx @tauri-apps/cli@v2 signer generate --ci -w "$RUNNER_TEMP/tauri-updater.key" -p "$PASSWORD"
+          {
+            echo 'TAURI_SIGNING_PRIVATE_KEY<<EOF'
+            cat "$RUNNER_TEMP/tauri-updater.key"
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
+          {
+            echo 'TAURI_UPDATER_PUBLIC_KEY<<EOF'
+            cat "$RUNNER_TEMP/tauri-updater.key.pub"
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
+
+      - name: Generate updater config
+        shell: bash
+        run: |
+          node <<'EOF'
+          const fs = require('node:fs');
+          const path = require('node:path');
+
+          const publicKey = (process.env.TAURI_UPDATER_PUBLIC_KEY || '').trim();
+          const repository = process.env.GITHUB_REPOSITORY;
+
+          if (!publicKey) {
+            throw new Error('TAURI_UPDATER_PUBLIC_KEY is not set.');
+          }
+
+          if (!repository) {
+            throw new Error('GITHUB_REPOSITORY is not set.');
+          }
+
+          const configPath = path.join(process.cwd(), 'src-tauri', 'tauri.release.conf.json');
+          const config = {
+            bundle: {
+              createUpdaterArtifacts: true,
+            },
+            plugins: {
+              updater: {
+                pubkey: publicKey,
+                endpoints: [
+                  `https://github.com/${repository}/releases/latest/download/latest.json`,
+                ],
+                windows: {
+                  installMode: 'passive',
+                },
+              },
+            },
+          };
+
+          fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`);
+          EOF
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ env.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: src-tauri
+          args: ${{ matrix.args }} --config tauri.release.conf.json
