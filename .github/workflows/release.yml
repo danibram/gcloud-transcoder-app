@@ -4,16 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Release version without the leading v (example: 1.0.0)
+        description: "Release version without the leading v (example: 1.0.0)"
         required: true
         type: string
       draft:
-        description: Create the GitHub release as a draft
+        description: "Create the GitHub release as a draft"
         required: true
         default: false
         type: boolean
       prerelease:
-        description: Mark the GitHub release as a prerelease
+        description: "Mark the GitHub release as a prerelease"
         required: true
         default: false
         type: boolean
