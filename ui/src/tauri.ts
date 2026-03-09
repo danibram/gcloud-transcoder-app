@@ -11,6 +11,17 @@ import type {
 } from './types';
 
 export const api = {
+  appUpdateCheck: () =>
+    invoke<{
+      configured: boolean;
+      update: {
+        currentVersion: string;
+        version: string;
+        date?: string;
+        body?: string;
+      } | null;
+    }>('app_update_check'),
+  appUpdateInstall: () => invoke('app_update_install'),
   settingsGet: () => invoke<AppConfig>('settings_get'),
   settingsUpdate: (settings: GoogleCloudSettings) =>
     invoke<AppConfig>('settings_update', { settings }),

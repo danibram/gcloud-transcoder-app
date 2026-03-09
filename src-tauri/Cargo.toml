@@ -9,6 +9,8 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 tauri = { version = "2", features = [] }
+tauri-plugin-process = "2.3.1"
+tauri-plugin-updater = "2.10.0"
 transcoder_api_core = { path = ".." }
 
 [features]

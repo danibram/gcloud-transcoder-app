@@ -9,6 +9,7 @@ import SettingsPage from './components/SettingsPage';
 import TemplatesPage from './components/TemplatesPage';
 import { api } from './tauri';
 import { TranscoderJob } from './types';
+import { checkForAppUpdate, installAppUpdate, type AppUpdateState } from './updater';
 
 const App: Component = () => {
     const [jobs, setJobs] = createSignal<TranscoderJob[]>([]);
@@ -22,6 +23,7 @@ const App: Component = () => {
     const [totalJobs, setTotalJobs] = createSignal<number | undefined>(undefined);
     const [hasNextPage, setHasNextPage] = createSignal(false);
     const [searchTerm, setSearchTerm] = createSignal('');
+    const [updateState, setUpdateState] = createSignal<AppUpdateState>({ status: 'idle' });
     let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const handleSearchChange = (term: string) => {
@@ -75,8 +77,39 @@ const App: Component = () => {
 
     // No auto-refresh needed with CLI - manual refresh only
 
+    const loadAppUpdate = async () => {
+        setUpdateState({ status: 'checking' });
+        setUpdateState(await checkForAppUpdate());
+    };
+
+    const handleInstallUpdate = async () => {
+        if (updateState().status !== 'available') {
+            return;
+        }
+
+        try {
+            await installAppUpdate((nextState) => {
+                setUpdateState((current) => ({
+                    ...current,
+                    ...nextState,
+                }));
+            });
+        } catch (error) {
+            setUpdateState((current) => ({
+                ...current,
+                status: 'error',
+                message: error instanceof Error ? error.message : 'Failed to install update',
+            }));
+        }
+    };
+
+    const dismissUpdateBanner = () => {
+        setUpdateState((current) => ({ ...current, status: 'idle' }));
+    };
+
     onMount(() => {
         fetchJobs();
+        void loadAppUpdate();
     });
 
     return (
@@ -92,7 +125,10 @@ const App: Component = () => {
                             onSettings={() => setCurrentPage('settings')}
                             onTemplates={() => setCurrentPage('templates')}
                             onProcess={() => setCurrentPage('process')}
+                            onInstallUpdate={handleInstallUpdate}
+                            onDismissUpdate={dismissUpdateBanner}
                             isLoading={isLoading()}
+                            updateState={updateState()}
                         />
 
                         <main class="flex-1 min-h-0 overflow-hidden">

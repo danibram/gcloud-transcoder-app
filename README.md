@@ -129,6 +129,44 @@ Normal release cycle:
 
 You can also run the workflow manually and provide a version, but it will only publish if that version already matches the checked-in project files.
 
+## Auto-Update
+
+The desktop app checks for updates on startup and installs them from GitHub Releases.
+
+Release builds are configured to use this updater manifest URL:
+
+```text
+https://github.com/danibram/gcloud-transcoder-app/releases/latest/download/latest.json
+```
+
+That `latest.json` file is generated automatically by the release workflow and uploaded as a GitHub release asset by `tauri-action`.
+
+### Required GitHub Configuration
+
+Set these before publishing updater-enabled releases:
+
+- Repository secret `TAURI_SIGNING_PRIVATE_KEY`
+- Repository secret `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+- Repository variable `TAURI_UPDATER_PUBLIC_KEY`
+
+Generate the key pair with Tauri:
+
+```bash
+cargo tauri signer generate -w ~/.tauri/transcoder-app.key
+```
+
+Then:
+
+- store the private key contents or path in `TAURI_SIGNING_PRIVATE_KEY`
+- store the password in `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+- store the generated public key in `TAURI_UPDATER_PUBLIC_KEY`
+
+Notes:
+
+- updater signatures are mandatory; unsigned assets cannot be installed
+- local development builds can still run without updater config
+- the installed app does not scrape release HTML pages; it reads the machine-readable `latest.json` asset from GitHub Releases
+
 ## Testing
 
 Rust tests:

@@ -26,17 +26,33 @@ const { mockApi } = vi.hoisted(() => ({
       totalSize: 1,
       nextPageToken: undefined,
     }),
+    appUpdateCheck: vi.fn().mockResolvedValue(null),
+    appUpdateInstall: vi.fn().mockResolvedValue(undefined),
   },
+}));
+
+const { mockRelaunch } = vi.hoisted(() => ({
+  mockRelaunch: vi.fn(),
 }));
 
 vi.mock('./tauri', () => ({
   api: mockApi,
 }));
 
+vi.mock('@tauri-apps/plugin-process', () => ({
+  relaunch: mockRelaunch,
+}));
+
 describe('App', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mockApi.jobsList.mockClear();
+    mockApi.appUpdateCheck.mockReset();
+    mockApi.appUpdateCheck.mockResolvedValue({ configured: false, update: null });
+    mockApi.appUpdateInstall.mockReset();
+    mockApi.appUpdateInstall.mockResolvedValue(undefined);
+    mockRelaunch.mockReset();
+    mockRelaunch.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -64,5 +80,24 @@ describe('App', () => {
         searchTerm: 'needle',
       });
     });
+  });
+
+  it('offers an install action when an update is available', async () => {
+    mockApi.appUpdateCheck.mockResolvedValue({
+      configured: true,
+      update: {
+        currentVersion: '1.0.0',
+        version: '1.1.0',
+        body: 'Bug fixes',
+      },
+    });
+
+    render(() => <App />);
+
+    const installButton = await screen.findByRole('button', { name: 'Install 1.1.0' });
+    await userEvent.setup({ advanceTimers: vi.advanceTimersByTime }).click(installButton);
+
+    expect(mockApi.appUpdateInstall).toHaveBeenCalled();
+    expect(mockRelaunch).toHaveBeenCalled();
   });
 });

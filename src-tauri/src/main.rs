@@ -1,6 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use tauri::State;
+use tauri_plugin_updater::Builder as UpdaterBuilder;
+use tauri_plugin_updater::UpdaterExt;
 use transcoder_api_core::commands::jobs::JobsService;
 use transcoder_api_core::commands::process::ProcessService;
 use transcoder_api_core::commands::settings::SettingsService;
@@ -12,6 +14,22 @@ use transcoder_api_core::types::{
     AppConfig, ConnectionTestResult, CreateJobInput, GoogleCloudSettings, JobTemplate,
     JobTemplateUpsertInput, OpResult, PaginatedJobsResponse, TranscoderJob,
 };
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AppUpdateSummary {
+    current_version: String,
+    version: String,
+    date: Option<String>,
+    body: Option<String>,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AppUpdateCheckResponse {
+    configured: bool,
+    update: Option<AppUpdateSummary>,
+}
 
 #[derive(Clone)]
 struct AppState {
@@ -166,8 +184,86 @@ async fn job_create(
         .map_err(|error| error.to_string())
 }
 
+#[tauri::command]
+async fn app_update_check(app: tauri::AppHandle) -> Result<AppUpdateCheckResponse, String> {
+    match checked_update(&app).await? {
+        UpdateCheck::NotConfigured => Ok(AppUpdateCheckResponse {
+            configured: false,
+            update: None,
+        }),
+        UpdateCheck::NoUpdate => Ok(AppUpdateCheckResponse {
+            configured: true,
+            update: None,
+        }),
+        UpdateCheck::Available(update) => Ok(AppUpdateCheckResponse {
+            configured: true,
+            update: Some(AppUpdateSummary {
+                current_version: update.current_version,
+                version: update.version,
+                date: update.date.map(|date| date.to_string()),
+                body: update.body,
+            }),
+        }),
+    }
+}
+
+#[tauri::command]
+async fn app_update_install(app: tauri::AppHandle) -> Result<(), String> {
+    let update = match checked_update(&app).await? {
+        UpdateCheck::Available(update) => update,
+        UpdateCheck::NotConfigured => {
+            return Err("Auto-update is not configured for this build".into());
+        }
+        UpdateCheck::NoUpdate => {
+            return Err("No update is currently available".into());
+        }
+    };
+
+    update
+        .download_and_install(|_, _| {}, || {})
+        .await
+        .map_err(|error| error.to_string())
+}
+
+enum UpdateCheck {
+    NotConfigured,
+    NoUpdate,
+    Available(tauri_plugin_updater::Update),
+}
+
+async fn checked_update(app: &tauri::AppHandle) -> Result<UpdateCheck, String> {
+    let updater = match app.updater() {
+        Ok(updater) => updater,
+        Err(error) => {
+            let message = error.to_string();
+            if message.contains("Updater does not have any endpoints set")
+                || message.contains("missing field `pubkey`")
+                || message.contains("missing field `endpoints`")
+            {
+                return Ok(UpdateCheck::NotConfigured);
+            }
+
+            return Err(message);
+        }
+    };
+
+    updater
+        .check()
+        .await
+        .map(|update| match update {
+            Some(update) => UpdateCheck::Available(update),
+            None => UpdateCheck::NoUpdate,
+        })
+        .map_err(|error| error.to_string())
+}
+
 fn main() {
     tauri::Builder::default()
+        .setup(|app| {
+            app.handle().plugin(tauri_plugin_process::init())?;
+            app.handle().plugin(UpdaterBuilder::new().build())?;
+            Ok(())
+        })
         .manage(AppState::new())
         .invoke_handler(tauri::generate_handler![
             settings_get,
@@ -180,7 +276,9 @@ fn main() {
             template_create,
             template_update_replace,
             template_delete,
-            job_create
+            job_create,
+            app_update_check,
+            app_update_install
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

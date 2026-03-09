@@ -1,13 +1,17 @@
-import { Component } from 'solid-js';
+import { Component, Show } from 'solid-js';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { MonitorIcon, RefreshIcon, SettingsIcon } from './Icons';
+import { AlertCircleIcon, DownloadIcon, MonitorIcon, RefreshIcon, SettingsIcon, XIcon } from './Icons';
+import type { AppUpdateState } from '../updater';
 
 interface HeaderProps {
     onRefresh: () => void;
     onSettings: () => void;
     onTemplates: () => void;
     onProcess: () => void;
+    onInstallUpdate: () => void;
+    onDismissUpdate: () => void;
     isLoading: boolean;
+    updateState: AppUpdateState;
 }
 
 const Header: Component<HeaderProps> = (props) => {
@@ -19,12 +23,60 @@ const Header: Component<HeaderProps> = (props) => {
         void getCurrentWindow().startDragging();
     };
 
+    const progressPercent = () => {
+        const contentLength = props.updateState.contentLength ?? 0;
+        const downloadedBytes = props.updateState.downloadedBytes ?? 0;
+
+        if (contentLength <= 0) {
+            return null;
+        }
+
+        return Math.min(100, Math.round((downloadedBytes / contentLength) * 100));
+    };
+
+    const bannerTone = () => {
+        switch (props.updateState.status) {
+            case 'available':
+                return 'bg-amber-50 border-amber-200 text-amber-900';
+            case 'downloading':
+            case 'installing':
+                return 'bg-blue-50 border-blue-200 text-blue-900';
+            case 'error':
+                return 'bg-red-50 border-red-200 text-red-900';
+            default:
+                return '';
+        }
+    };
+
+    const bannerMessage = () => {
+        switch (props.updateState.status) {
+            case 'available':
+                return `Version ${props.updateState.version} is ready to install.`;
+            case 'downloading': {
+                const percent = progressPercent();
+                return percent === null
+                    ? `Downloading version ${props.updateState.version}...`
+                    : `Downloading version ${props.updateState.version}... ${percent}%`;
+            }
+            case 'installing':
+                return 'Installing update and restarting the app...';
+            case 'error':
+                return props.updateState.message ?? 'Auto-update failed.';
+            default:
+                return '';
+        }
+    };
+
+    const showUpdateBanner = () =>
+        props.updateState.status === 'available' ||
+        props.updateState.status === 'downloading' ||
+        props.updateState.status === 'installing' ||
+        props.updateState.status === 'error';
+
     return (
         <header class="bg-white border-b border-gray-200 shadow-sm">
             <div class="w-full px-4 sm:px-6 lg:px-8">
-                <div
-                    class="flex justify-between items-center py-3 gap-4"
-                >
+                <div class="flex justify-between items-center py-3 gap-4">
                     <div
                         class="flex items-center space-x-4 min-w-0 flex-1 cursor-move select-none"
                         data-tauri-drag-region
@@ -85,6 +137,42 @@ const Header: Component<HeaderProps> = (props) => {
                         </button>
                     </div>
                 </div>
+
+                <Show when={showUpdateBanner()}>
+                    <div class={`mb-3 flex items-center justify-between gap-4 rounded-lg border px-4 py-3 ${bannerTone()}`}>
+                        <div class="flex min-w-0 items-start gap-3">
+                            <AlertCircleIcon class="mt-0.5 h-5 w-5 shrink-0" />
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold">
+                                    {props.updateState.status === 'error' ? 'Update error' : 'App update'}
+                                </p>
+                                <p class="text-sm opacity-90">{bannerMessage()}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex shrink-0 items-center gap-2">
+                            <Show when={props.updateState.status === 'available'}>
+                                <button
+                                    onClick={props.onInstallUpdate}
+                                    class="inline-flex items-center rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                                >
+                                    <DownloadIcon class="mr-2 h-4 w-4" />
+                                    Install {props.updateState.version}
+                                </button>
+                            </Show>
+
+                            <Show when={props.updateState.status === 'available' || props.updateState.status === 'error'}>
+                                <button
+                                    onClick={props.onDismissUpdate}
+                                    class="rounded-lg p-2 transition-colors hover:bg-black/5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                                    aria-label="Dismiss update banner"
+                                >
+                                    <XIcon class="h-4 w-4" />
+                                </button>
+                            </Show>
+                        </div>
+                    </div>
+                </Show>
             </div>
         </header>
     );
