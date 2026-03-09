@@ -61,6 +61,7 @@ logs/
 # Misc temporary files
 tmp/
 temp/
+src-tauri/tauri.release.conf.json
 
 # Old app artifacts kept local-only
 public/
