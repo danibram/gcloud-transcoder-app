@@ -83,48 +83,52 @@ const App: Component = () => {
         <ErrorBoundary>
             <div class="min-h-screen bg-gray-50">
                 <Show when={currentPage() === 'dashboard'}>
-                    <Header
-                        onRefresh={() => {
-                            setCurrentPageNum(1);
-                            fetchJobs(1, pageSize(), searchTerm());
-                        }}
-                        onSettings={() => setCurrentPage('settings')}
-                        onTemplates={() => setCurrentPage('templates')}
-                        onProcess={() => setCurrentPage('process')}
-                        isLoading={isLoading()}
-                    />
-
-                    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                        <Dashboard />
-
-                        <JobsTable
-                            jobs={jobs()}
-                            isLoading={isLoading()}
-                            error={error()}
-                            onJobClick={handleJobClick}
+                    <div class="h-screen flex flex-col overflow-hidden">
+                        <Header
                             onRefresh={() => {
                                 setCurrentPageNum(1);
                                 fetchJobs(1, pageSize(), searchTerm());
                             }}
-                            currentPage={currentPageNum()}
-                            pageSize={pageSize()}
-                            totalJobs={totalJobs()}
-                            hasNextPage={hasNextPage()}
-                            onPageChange={(page) => fetchJobs(page, pageSize(), searchTerm())}
-                            onPageSizeChange={(size) => {
-                                setCurrentPageNum(1);
-                                fetchJobs(1, size, searchTerm());
-                            }}
-                            searchTerm={searchTerm()}
-                            onSearchChange={handleSearchChange}
+                            onSettings={() => setCurrentPage('settings')}
+                            onTemplates={() => setCurrentPage('templates')}
+                            onProcess={() => setCurrentPage('process')}
+                            isLoading={isLoading()}
                         />
-                    </main>
 
-                    <JobModal
-                        job={selectedJob()}
-                        isOpen={isModalOpen()}
-                        onClose={closeModal}
-                    />
+                        <main class="flex-1 min-h-0 overflow-hidden">
+                            <div class="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 py-8 flex flex-col min-h-0 overflow-hidden">
+                                <Dashboard />
+
+                                <JobsTable
+                                    jobs={jobs()}
+                                    isLoading={isLoading()}
+                                    error={error()}
+                                    onJobClick={handleJobClick}
+                                    onRefresh={() => {
+                                        setCurrentPageNum(1);
+                                        fetchJobs(1, pageSize(), searchTerm());
+                                    }}
+                                    currentPage={currentPageNum()}
+                                    pageSize={pageSize()}
+                                    totalJobs={totalJobs()}
+                                    hasNextPage={hasNextPage()}
+                                    onPageChange={(page) => fetchJobs(page, pageSize(), searchTerm())}
+                                    onPageSizeChange={(size) => {
+                                        setCurrentPageNum(1);
+                                        fetchJobs(1, size, searchTerm());
+                                    }}
+                                    searchTerm={searchTerm()}
+                                    onSearchChange={handleSearchChange}
+                                />
+                            </div>
+                        </main>
+
+                        <JobModal
+                            job={selectedJob()}
+                            isOpen={isModalOpen()}
+                            onClose={closeModal}
+                        />
+                    </div>
                 </Show>
 
                 <Show when={currentPage() === 'settings'}>

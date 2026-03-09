@@ -112,8 +112,8 @@ const JobsTable: Component<JobsTableProps> = (props) => {
                     </div>
                 }
             >
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-200">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 min-h-0 flex flex-col">
+                    <div class="px-6 py-4 border-b border-gray-200 flex-shrink-0">
                         <div class="flex items-center justify-between mb-4">
                             <div class="flex items-center space-x-3">
                                 <MonitorIcon class="w-5 h-5 text-blue-600" />
@@ -172,9 +172,9 @@ const JobsTable: Component<JobsTableProps> = (props) => {
                         </Show>
                     </div>
 
-                    <div class="overflow-x-auto">
+                    <div class="flex-1 min-h-0 overflow-auto">
                         <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                            <thead class="bg-gray-50 sticky top-0 z-10">
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Job ID
@@ -269,7 +269,7 @@ const JobsTable: Component<JobsTableProps> = (props) => {
                     </div>
 
                     <Show when={props.isLoading}>
-                        <div class="px-6 py-4 text-center">
+                        <div class="px-6 py-4 text-center flex-shrink-0">
                             <div class="inline-flex items-center text-sm text-gray-500">
                                 <RefreshIcon class="animate-spin w-4 h-4 mr-2" />
                                 Loading jobs...
@@ -279,7 +279,7 @@ const JobsTable: Component<JobsTableProps> = (props) => {
 
                     {/* Pagination Controls */}
                     <Show when={props.jobs.length > 0}>
-                        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between flex-shrink-0">
                             <div class="text-sm text-gray-700">
                                 Showing <span class="font-medium">{startIndex()}</span> to{' '}
                                 <span class="font-medium">{endIndex()}</span>
@@ -329,4 +329,3 @@ const JobsTable: Component<JobsTableProps> = (props) => {
 };
 
 export default JobsTable;
-

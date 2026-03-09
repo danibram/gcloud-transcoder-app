@@ -1,4 +1,5 @@
 import { Component } from 'solid-js';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { MonitorIcon, RefreshIcon, SettingsIcon } from './Icons';
 
 interface HeaderProps {
@@ -10,15 +11,32 @@ interface HeaderProps {
 }
 
 const Header: Component<HeaderProps> = (props) => {
+    const handleWindowDrag = (event: MouseEvent) => {
+        if (event.button !== 0) {
+            return;
+        }
+
+        void getCurrentWindow().startDragging();
+    };
+
     return (
         <header class="bg-white border-b border-gray-200 shadow-sm">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center py-6">
-                    <div class="flex items-center space-x-4">
+                <div
+                    class="h-8 flex items-center cursor-move select-none"
+                    data-tauri-drag-region
+                    onMouseDown={handleWindowDrag}
+                >
+                    <div class="w-[78px] shrink-0" aria-hidden="true" />
+                    <div class="flex-1" />
+                </div>
+
+                <div class="flex justify-between items-center pb-4 gap-4">
+                    <div class="flex items-center space-x-4 min-w-0 flex-1">
                         <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
                             <MonitorIcon class="w-6 h-6 text-white" />
                         </div>
-                        <div>
+                        <div class="min-w-0">
                             <h1 class="text-2xl font-bold text-gray-900">
                                 Transcoder API Dashboard
                             </h1>
@@ -28,7 +46,7 @@ const Header: Component<HeaderProps> = (props) => {
                         </div>
                     </div>
 
-                    <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-3 shrink-0">
                         <button
                             onClick={props.onProcess}
                             class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
