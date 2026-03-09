@@ -1,5 +1,5 @@
 [package]
-name = "transcoder-api-dashboard"
+name = "gcloud-transcoder-app"
 version = "0.1.0"
 edition = "2024"
 

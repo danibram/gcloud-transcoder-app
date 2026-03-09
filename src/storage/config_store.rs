@@ -4,6 +4,9 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+const APP_DIR_NAME: &str = "gcloud-transcoder-app";
+const LEGACY_APP_DIR_NAME: &str = "transcoder-api-dashboard";
+
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigStoreError {
     #[error("io error: {0}")]
@@ -40,7 +43,7 @@ impl ConfigStore {
     pub fn default_app_dir() -> PathBuf {
         dirs::config_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join("transcoder-api-dashboard")
+            .join(APP_DIR_NAME)
     }
 
     pub fn config_path(&self) -> &Path {
@@ -48,6 +51,7 @@ impl ConfigStore {
     }
 
     pub fn load_or_initialize_config(&self) -> Result<LoadConfigResult, ConfigStoreError> {
+        self.migrate_legacy_default_dir()?;
         fs::create_dir_all(&self.config_dir)?;
 
         if !self.config_path.exists() {
@@ -133,6 +137,31 @@ impl ConfigStore {
             config_migrated: false,
         })
     }
+
+    fn migrate_legacy_default_dir(&self) -> Result<(), ConfigStoreError> {
+        let is_named_after_new_app_dir = self
+            .config_dir
+            .file_name()
+            .and_then(|name| name.to_str())
+            == Some(APP_DIR_NAME);
+
+        if !is_named_after_new_app_dir || self.config_path.exists() {
+            return Ok(());
+        }
+
+        let legacy_dir = self.config_dir.with_file_name(LEGACY_APP_DIR_NAME);
+
+        if !legacy_dir.exists() {
+            return Ok(());
+        }
+
+        if let Some(parent) = self.config_dir.parent() {
+            fs::create_dir_all(parent)?;
+        }
+
+        fs::rename(legacy_dir, &self.config_dir)?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -201,5 +230,26 @@ mod tests {
         assert!(loaded.config_migrated);
         assert_eq!(loaded.config.version, CURRENT_CONFIG_VERSION);
         assert!(dir.path().join("config.json.bak").exists());
+    }
+
+    #[test]
+    fn migrates_legacy_default_directory_when_new_path_is_empty() {
+        let root = tempdir().expect("tempdir");
+        let legacy_dir = root.path().join(LEGACY_APP_DIR_NAME);
+        let new_dir = root.path().join(APP_DIR_NAME);
+        fs::create_dir_all(&legacy_dir).expect("create legacy dir");
+        fs::write(
+            legacy_dir.join("config.json"),
+            serde_json::to_vec_pretty(&AppConfig::default()).expect("serialize config"),
+        )
+        .expect("write legacy config");
+
+        let store = ConfigStore::new(&new_dir);
+        store
+            .migrate_legacy_default_dir()
+            .expect("migrate legacy dir");
+
+        assert!(new_dir.join("config.json").exists());
+        assert!(!legacy_dir.exists());
     }
 }

@@ -13,8 +13,8 @@ This project is a Tauri desktop app with a Rust backend and a SolidJS frontend. 
 ## Setup
 
 ```bash
-git clone https://github.com/<your-org-or-user>/transcoder-api-ui.git
-cd transcoder-api-ui
+git clone https://github.com/<your-org-or-user>/gcloud-transcoder-app.git
+cd gcloud-transcoder-app
 npm --prefix ui install
 ```
 

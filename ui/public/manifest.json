@@ -1,7 +1,7 @@
 {
-    "name": "Google Cloud Transcoder API Dashboard",
-    "short_name": "Transcoder API",
-    "description": "Desktop application for monitoring and managing Google Cloud Video Transcoder API jobs",
+    "name": "Transcoder App",
+    "short_name": "Transcoder App",
+    "description": "Desktop application for monitoring and managing Google Cloud Video Transcoder jobs",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",
@@ -40,4 +40,3 @@
     ],
     "screenshots": []
 }
-

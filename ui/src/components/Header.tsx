@@ -36,7 +36,7 @@ const Header: Component<HeaderProps> = (props) => {
                         </div>
                         <div class="min-w-0">
                             <h1 class="text-2xl font-bold text-gray-900">
-                                Transcoder API Dashboard
+                                Transcoder App
                             </h1>
                             <p class="text-sm text-gray-500">
                                 Google Cloud Video Transcoder • CLI Mode

@@ -1,4 +1,4 @@
-# Transcoder API Dashboard
+# Transcoder App
 
 A desktop UI for teams that use Google Cloud Video Transcoder but do not want to live in the CLI all day.
 
@@ -13,7 +13,7 @@ Google Cloud Transcoder is powerful, but the day-to-day operator workflow is usu
 - jump between bucket paths and output URLs
 - manage templates by hand
 
-Transcoder API Dashboard turns that into one desktop workflow.
+Transcoder App turns that into one desktop workflow.
 
 ## What You Can Do
 
@@ -57,13 +57,13 @@ The app supports two categories of transcoding specs:
   - `preset/web-sd`
 - Custom Google Cloud Transcoder job templates entered as JSON and passed through to `gcloud`
 
-Human-readable specs live in [docs/specs/index.md](/Users/dbr/htdocs/st/transcoder-api-ui/docs/specs/index.md).
+Human-readable specs live in [docs/specs/index.md](docs/specs/index.md).
 
 ## Architecture
 
-- [src/](/Users/dbr/htdocs/st/transcoder-api-ui/src): Rust domain logic, config storage, and `gcloud` integration
-- [src-tauri/](/Users/dbr/htdocs/st/transcoder-api-ui/src-tauri): Tauri desktop shell
-- [ui/](/Users/dbr/htdocs/st/transcoder-api-ui/ui): SolidJS frontend
+- [src/](src): Rust domain logic, config storage, and `gcloud` integration
+- [src-tauri/](src-tauri): Tauri desktop shell
+- [ui/](ui): SolidJS frontend
 
 The app does not talk to Google Cloud directly with embedded SDK credentials. It shells out to `gcloud`, which means:
 
@@ -132,7 +132,7 @@ npm --prefix ui run test
 
 ## Configuration
 
-Settings are stored in the native user config directory under `transcoder-api-dashboard/config.json`.
+Settings are stored in the native user config directory under `gcloud-transcoder-app/config.json`.
 
 Shape:
 
@@ -152,18 +152,18 @@ Behavior:
 - corrupt config is backed up and recreated
 - older config versions are migrated with a backup
 
-More detail: [docs/specs/app-configuration.md](/Users/dbr/htdocs/st/transcoder-api-ui/docs/specs/app-configuration.md)
+More detail: [docs/specs/app-configuration.md](docs/specs/app-configuration.md)
 
 ## Documentation Map
 
-- [docs/specs/index.md](/Users/dbr/htdocs/st/transcoder-api-ui/docs/specs/index.md)
-- [docs/specs/built-in-presets.md](/Users/dbr/htdocs/st/transcoder-api-ui/docs/specs/built-in-presets.md)
-- [docs/specs/template-json-support.md](/Users/dbr/htdocs/st/transcoder-api-ui/docs/specs/template-json-support.md)
-- [docs/specs/job-observability.md](/Users/dbr/htdocs/st/transcoder-api-ui/docs/specs/job-observability.md)
-- [docs/specs/app-configuration.md](/Users/dbr/htdocs/st/transcoder-api-ui/docs/specs/app-configuration.md)
-- [docs/specs/limitations-and-behavior.md](/Users/dbr/htdocs/st/transcoder-api-ui/docs/specs/limitations-and-behavior.md)
-- [docs/screenshots.md](/Users/dbr/htdocs/st/transcoder-api-ui/docs/screenshots.md)
+- [docs/specs/index.md](docs/specs/index.md)
+- [docs/specs/built-in-presets.md](docs/specs/built-in-presets.md)
+- [docs/specs/template-json-support.md](docs/specs/template-json-support.md)
+- [docs/specs/job-observability.md](docs/specs/job-observability.md)
+- [docs/specs/app-configuration.md](docs/specs/app-configuration.md)
+- [docs/specs/limitations-and-behavior.md](docs/specs/limitations-and-behavior.md)
+- [docs/screenshots.md](docs/screenshots.md)
 
 ## License
 
-MIT. See [LICENSE](/Users/dbr/htdocs/st/transcoder-api-ui/LICENSE).
+MIT. See [LICENSE](LICENSE).

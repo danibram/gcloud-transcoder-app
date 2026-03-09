@@ -4,11 +4,11 @@ This folder documents the app from the operator point of view: what it supports 
 
 ## Read This First
 
-- [built-in-presets.md](/Users/dbr/htdocs/st/transcoder-api-ui/docs/specs/built-in-presets.md): the presets exposed directly in the job creation form
-- [template-json-support.md](/Users/dbr/htdocs/st/transcoder-api-ui/docs/specs/template-json-support.md): the template JSON shapes the app understands and displays cleanly
-- [job-observability.md](/Users/dbr/htdocs/st/transcoder-api-ui/docs/specs/job-observability.md): what the dashboard and job detail view surface
-- [app-configuration.md](/Users/dbr/htdocs/st/transcoder-api-ui/docs/specs/app-configuration.md): local configuration, defaults, and validation
-- [limitations-and-behavior.md](/Users/dbr/htdocs/st/transcoder-api-ui/docs/specs/limitations-and-behavior.md): non-obvious behavior and current constraints
+- [built-in-presets.md](built-in-presets.md): the presets exposed directly in the job creation form
+- [template-json-support.md](template-json-support.md): the template JSON shapes the app understands and displays cleanly
+- [job-observability.md](job-observability.md): what the dashboard and job detail view surface
+- [app-configuration.md](app-configuration.md): local configuration, defaults, and validation
+- [limitations-and-behavior.md](limitations-and-behavior.md): non-obvious behavior and current constraints
 
 ## Short Version
 
